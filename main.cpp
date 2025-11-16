@@ -21,6 +21,70 @@ public:
         return result;
     }
 
+    Derived operator+(Real other) const {
+        Derived result(static_cast<const Derived&>(*this));
+        for (std::size_t i = 0; i < n; ++i) {
+            result.data[i] += other;
+        }
+        return result;
+    }
+
+    Derived operator-(const Derived& other) const {
+        Derived result(static_cast<const Derived&>(*this));
+        for (std::size_t i = 0; i < n; ++i) {
+            result.data[i] -= other.data[i];
+        }
+        return result;
+    }
+
+    Derived operator-(Real other) const {
+        Derived result(static_cast<const Derived&>(*this));
+        for (std::size_t i = 0; i < n; ++i) {
+            result.data[i] -= other;
+        }
+        return result;
+    }
+
+    Derived operator-() const {
+        Derived result(static_cast<const Derived&>(*this));
+        for (std::size_t i = 0; i < n; ++i) {
+            result.data[i] = -result.data[i];
+        }
+        return result;
+    }
+
+    Derived operator*(const Derived& other) const {
+        Derived result(static_cast<const Derived&>(*this));
+        for (std::size_t i = 0; i < n; ++i) {
+            result.data[i] *= other.data[i];
+        }
+        return result;
+    }
+
+    Derived operator*(Real other) const {
+        Derived result(static_cast<const Derived&>(*this));
+        for (std::size_t i = 0; i < n; ++i) {
+            result.data[i] *= other;
+        }
+        return result;
+    }
+
+    Derived operator/(const Derived& other) const {
+        Derived result(static_cast<const Derived&>(*this));
+        for (std::size_t i = 0; i < n; ++i) {
+            result.data[i] /= other.data[i];
+        }
+        return result;
+    }
+
+    Derived operator/(Real other) const {
+        Derived result(static_cast<const Derived&>(*this));
+        for (std::size_t i = 0; i < n; ++i) {
+            result.data[i] /= other;
+        }
+        return result;
+    }
+
 protected:
     std::vector<Real> data_;
 
