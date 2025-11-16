@@ -25,6 +25,14 @@ public:
 
     Field1D(std::size_t ni_) : Field<Real>(ni_), ni(ni_) {}
 
+    Real& operator()(std::size_t i) {
+        return this->data[i];
+    }
+
+    const Real& operator()(std::size_t i) const {
+        return this->data[i];
+    }
+
 };
 
 template<typename Real>
@@ -36,6 +44,14 @@ public:
     const std::size_t nj;
 
     Field2D(std::size_t ni_, std::size_t nj_) : Field<Real>(ni_ * nj_), ni(ni_), nj(nj_) {}
+    
+    Real& operator()(std::size_t i, std::size_t j) {
+        return this->data[j * ni + i];
+    }
+
+    const Real& operator()(std::size_t i, std::size_t j) const {
+        return this->data[j * ni + i];
+    }
 
 };
 
