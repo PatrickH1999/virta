@@ -6,6 +6,8 @@
 *.out
 *.ex
 *.d
+*.bin
+*.ipynb
 
 build/
 bin/

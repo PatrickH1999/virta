@@ -1,36 +1,34 @@
+#include <fstream>
 #include <iostream>
 #include <vector>
 
 namespace virta {
 
-struct Range1D {
-    long begin_i;
-    long end_i;
-    long step_i;
+struct Range {
+    int begin;
+    int end;
+    int step;
 
-    Range1D(long begin_i_, long end_i_) : begin_i(begin_i_), end_i(end_i_), step_i(1) {}
-    Range1D(long begin_i_, long end_i_, long step_i_ = 1) : begin_i(begin_i_), end_i(end_i_), step_i(step_i_) {}
+    Range(int begin_, int end_, int step_ = 1) : begin(begin_), end(end_), step(step_) {}
 };
 
-struct Range2D {
-    long begin_i;
-    long end_i;
-    long step_i;
-    long begin_j;
-    long end_j;
-    long step_j;
+template <typename Func>
+inline void parallel_for(const Range& R_i, Func&& f)
+{
+    for (int i = R_i.begin; i < R_i.end; i += R_i.step) {
+        f(i);
+    }
+}
 
-    Range2D(long begin_i_, 
-            long end_i_, 
-            long begin_j_,
-            long end_j_) : begin_i(begin_i_), end_i(end_i_), step_i(1), begin_j(begin_j_), end_j(end_j_), step_j(1) {}
-    Range2D(long begin_i_,
-            long end_i_,
-            long step_i_,
-            long begin_j_,
-            long end_j_,
-            long step_j_) : begin_i(begin_i_), end_i(end_i_), step_i(step_i_), begin_j(begin_j_), end_j(end_j_), step_j(step_j_) {}
-};
+template <typename Func>
+inline void parallel_for(const Range& R_i, const Range& R_j, Func&& f)
+{
+    for (int i = R_i.begin; i < R_i.end; i += R_i.step) {
+        for (int j = R_j.begin; j < R_j.end; j += R_j.step) {
+            f(i, j);
+        }
+    }
+}
 
 template<typename Real, typename Derived>
 class Field {
@@ -45,73 +43,73 @@ public:
 
     Derived operator+(const Derived& other) const {
         Derived result(static_cast<const Derived&>(*this));
-        for (std::size_t i = 0; i < n; ++i) {
+        parallel_for_all(result, [&](int i) {
             result.data_[i] += other.data_[i];
-        }
+        });
         return result;
     }
 
     Derived operator+(Real other) const {
         Derived result(static_cast<const Derived&>(*this));
-        for (std::size_t i = 0; i < n; ++i) {
+        parallel_for_all(result, [&](int i) {
             result.data_[i] += other;
-        }
+        });
         return result;
     }
 
     Derived operator-(const Derived& other) const {
         Derived result(static_cast<const Derived&>(*this));
-        for (std::size_t i = 0; i < n; ++i) {
+        parallel_for_all(result, [&](int i) {
             result.data_[i] -= other.data_[i];
-        }
+        });
         return result;
     }
 
     Derived operator-(Real other) const {
         Derived result(static_cast<const Derived&>(*this));
-        for (std::size_t i = 0; i < n; ++i) {
+        parallel_for_all(result, [&](int i) {
             result.data_[i] -= other;
-        }
+        });
         return result;
     }
 
     Derived operator-() const {
         Derived result(static_cast<const Derived&>(*this));
-        for (std::size_t i = 0; i < n; ++i) {
+        parallel_for_all(result, [&](int i) {
             result.data_[i] = -result.data_[i];
-        }
+        });
         return result;
     }
 
     Derived operator*(const Derived& other) const {
         Derived result(static_cast<const Derived&>(*this));
-        for (std::size_t i = 0; i < n; ++i) {
+        parallel_for_all(result, [&](int i) {
             result.data_[i] *= other.data_[i];
-        }
+        });
         return result;
     }
 
     Derived operator*(Real other) const {
         Derived result(static_cast<const Derived&>(*this));
-        for (std::size_t i = 0; i < n; ++i) {
+        parallel_for_all(result, [&](int i) {
             result.data_[i] *= other;
-        }
+        });
         return result;
     }
 
     Derived operator/(const Derived& other) const {
         Derived result(static_cast<const Derived&>(*this));
-        for (std::size_t i = 0; i < n; ++i) {
+        parallel_for_all(result, [&](int i) {
             result.data_[i] /= other.data_[i];
-        }
+        });
         return result;
     }
 
     Derived operator/(Real other) const {
         Derived result(static_cast<const Derived&>(*this));
-        for (std::size_t i = 0; i < n; ++i) {
+        parallel_for_all(result, [&](int i) {
             result.data_[i] /= other;
-        }
+        });
         return result;
     }
 
@@ -159,12 +157,26 @@ public:
         return this->data[j * ni + i];
     }
 
+    void write_binary(const std::string& filename) {
+        std::ofstream out(filename, std::ios::binary);
+        out.write(reinterpret_cast<const char*>(&this->ni), sizeof(this->ni));
+        out.write(reinterpret_cast<const char*>(&this->nj), sizeof(this->nj));
+        out.write(reinterpret_cast<const char*>(this->data_.data()), this->data_.size() * sizeof(Real));
+    }
+
 };
+
+template <typename Func, typename Real, typename Derived>
+inline void parallel_for_all(const Field<Real, Derived>& field, Func&& func)
+{
+    parallel_for(Range(0, field.n), std::forward<Func>(func));
+}
 
 } // namespace virta
 
 int main() {
     std::cout << "Hello, World!" << '\n';
-    virta::Field2D<double> f1(10000, 30000, 1.0); 
-    virta::Field2D<double> f2 = f1 + f1;
+    virta::Field2D<double> f1(100, 100, 1.0); 
+    virta::Field2D<double> f2 = f1 / 7.2315;
+    f2.write_binary("output.bin");
 }
