@@ -3,6 +3,35 @@
 
 namespace virta {
 
+struct Range1D {
+    long begin_i;
+    long end_i;
+    long step_i;
+
+    Range1D(long begin_i_, long end_i_) : begin_i(begin_i_), end_i(end_i_), step_i(1) {}
+    Range1D(long begin_i_, long end_i_, long step_i_ = 1) : begin_i(begin_i_), end_i(end_i_), step_i(step_i_) {}
+};
+
+struct Range2D {
+    long begin_i;
+    long end_i;
+    long step_i;
+    long begin_j;
+    long end_j;
+    long step_j;
+
+    Range2D(long begin_i_, 
+            long end_i_, 
+            long begin_j_,
+            long end_j_) : begin_i(begin_i_), end_i(end_i_), step_i(1), begin_j(begin_j_), end_j(end_j_), step_j(1) {}
+    Range2D(long begin_i_,
+            long end_i_,
+            long step_i_,
+            long begin_j_,
+            long end_j_,
+            long step_j_) : begin_i(begin_i_), end_i(end_i_), step_i(step_i_), begin_j(begin_j_), end_j(end_j_), step_j(step_j_) {}
+};
+
 template<typename Real, typename Derived>
 class Field {
 
