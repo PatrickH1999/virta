@@ -10,13 +10,14 @@ public:
     const std::size_t n;
 
     explicit Field(std::size_t n_) : n(n_), data_(n_, Real(0)) {}
+    explicit Field(std::size_t n_, Real value_) : n(n_), data_(n_, Real(value_)) {}
 
     virtual ~Field() = default;
 
     Derived operator+(const Derived& other) const {
         Derived result(static_cast<const Derived&>(*this));
         for (std::size_t i = 0; i < n; ++i) {
-            result.data[i] += other.data[i];
+            result.data_[i] += other.data_[i];
         }
         return result;
     }
@@ -24,7 +25,7 @@ public:
     Derived operator+(Real other) const {
         Derived result(static_cast<const Derived&>(*this));
         for (std::size_t i = 0; i < n; ++i) {
-            result.data[i] += other;
+            result.data_[i] += other;
         }
         return result;
     }
@@ -32,7 +33,7 @@ public:
     Derived operator-(const Derived& other) const {
         Derived result(static_cast<const Derived&>(*this));
         for (std::size_t i = 0; i < n; ++i) {
-            result.data[i] -= other.data[i];
+            result.data_[i] -= other.data_[i];
         }
         return result;
     }
@@ -40,7 +41,7 @@ public:
     Derived operator-(Real other) const {
         Derived result(static_cast<const Derived&>(*this));
         for (std::size_t i = 0; i < n; ++i) {
-            result.data[i] -= other;
+            result.data_[i] -= other;
         }
         return result;
     }
@@ -48,7 +49,7 @@ public:
     Derived operator-() const {
         Derived result(static_cast<const Derived&>(*this));
         for (std::size_t i = 0; i < n; ++i) {
-            result.data[i] = -result.data[i];
+            result.data_[i] = -result.data_[i];
         }
         return result;
     }
@@ -56,7 +57,7 @@ public:
     Derived operator*(const Derived& other) const {
         Derived result(static_cast<const Derived&>(*this));
         for (std::size_t i = 0; i < n; ++i) {
-            result.data[i] *= other.data[i];
+            result.data_[i] *= other.data_[i];
         }
         return result;
     }
@@ -64,7 +65,7 @@ public:
     Derived operator*(Real other) const {
         Derived result(static_cast<const Derived&>(*this));
         for (std::size_t i = 0; i < n; ++i) {
-            result.data[i] *= other;
+            result.data_[i] *= other;
         }
         return result;
     }
@@ -72,7 +73,7 @@ public:
     Derived operator/(const Derived& other) const {
         Derived result(static_cast<const Derived&>(*this));
         for (std::size_t i = 0; i < n; ++i) {
-            result.data[i] /= other.data[i];
+            result.data_[i] /= other.data_[i];
         }
         return result;
     }
@@ -80,7 +81,7 @@ public:
     Derived operator/(Real other) const {
         Derived result(static_cast<const Derived&>(*this));
         for (std::size_t i = 0; i < n; ++i) {
-            result.data[i] /= other;
+            result.data_[i] /= other;
         }
         return result;
     }
@@ -98,6 +99,7 @@ public:
     const std::size_t ni;
 
     Field1D(std::size_t ni_) : Field<Real, Field1D<Real>>(ni_), ni(ni_) {}
+    Field1D(std::size_t ni_, Real value_) : Field<Real, Field1D<Real>>(ni_, value_), ni(ni_) {}
 
     Real& operator()(std::size_t i) {
         return this->data[i];
@@ -118,6 +120,7 @@ public:
     const std::size_t nj;
 
     Field2D(std::size_t ni_, std::size_t nj_) : Field<Real, Field2D<Real>>(ni_ * nj_), ni(ni_), nj(nj_) {}
+    Field2D(std::size_t ni_, std::size_t nj_, Real value_) : Field<Real, Field2D<Real>>(ni_ * nj_, value_), ni(ni_), nj(nj_) {}
     
     Real& operator()(std::size_t i, std::size_t j) {
         return this->data[j * ni + i];
@@ -133,8 +136,6 @@ public:
 
 int main() {
     std::cout << "Hello, World!" << '\n';
-    virta::Field1D<float> f1(100); 
-    std::cout << "f1 created. ndim = " << f1.ndim << ", n = " << f1.n << '\n';
-    virta::Field2D<float> f2(100, 200); 
-    std::cout << "f2 created. ndim = " << f2.ndim << ", n = " << f2.n << '\n';
+    virta::Field2D<double> f1(10000, 30000, 1.0); 
+    virta::Field2D<double> f2 = f1 + f1;
 }
