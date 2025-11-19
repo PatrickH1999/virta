@@ -68,11 +68,11 @@ public:
     Field1D(size_t ni_) : Field<Real, Field1D<Real>>(ni_), ni(ni_) {}
     Field1D(size_t ni_, Real value_) : Field<Real, Field1D<Real>>(ni_, value_), ni(ni_) {}
 
-    Real& operator()(size_t i) {
+    inline Real& operator()(size_t i) {
         return this->data[i];
     }
 
-    const Real& operator()(size_t i) const {
+    inline const Real& operator()(size_t i) const {
         return this->data[i];
     }
 
@@ -89,15 +89,19 @@ public:
     Field2D(size_t ni_, size_t nj_) : Field<Real, Field2D<Real>>(ni_ * nj_), ni(ni_), nj(nj_) {}
     Field2D(size_t ni_, size_t nj_, Real value_) : Field<Real, Field2D<Real>>(ni_ * nj_, value_), ni(ni_), nj(nj_) {}
     
-    Real& operator()(size_t i) {
+    inline Real& operator()(size_t i) {
         return this->data[i];
     }
     
-    Real& operator()(size_t i, size_t j) {
+    inline const Real& operator()(size_t i) const {
+        return this->data[i];
+    }
+    
+    inline Real& operator()(size_t i, size_t j) {
         return this->data[j * ni + i];
     }
 
-    const Real& operator()(size_t i, size_t j) const {
+    inline const Real& operator()(size_t i, size_t j) const {
         return this->data[j * ni + i];
     }
 
