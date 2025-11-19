@@ -7,7 +7,7 @@
 *.ex
 *.d
 *.bin
-*.ipynb
+*.ipynb*
 
 build/
 bin/
