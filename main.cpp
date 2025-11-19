@@ -1,6 +1,11 @@
+#include <chrono>
+#include <cmath>
 #include <fstream>
 #include <iostream>
 #include <vector>
+#ifdef USE_OMP
+    #include <omp.h>
+#endif
 
 namespace virta {
 
@@ -15,6 +20,9 @@ struct Range {
 template <typename Func>
 inline void parallel_for(const Range& R_i, Func&& f)
 {
+    #ifdef USE_OMP
+        #pragma omp parallel for
+    #endif
     for (int i = R_i.begin; i < R_i.end; i += R_i.step) {
         f(i);
     }
@@ -23,8 +31,11 @@ inline void parallel_for(const Range& R_i, Func&& f)
 template <typename Func>
 inline void parallel_for(const Range& R_i, const Range& R_j, Func&& f)
 {
-    for (int i = R_i.begin; i < R_i.end; i += R_i.step) {
-        for (int j = R_j.begin; j < R_j.end; j += R_j.step) {
+    #ifdef USE_OMP
+        #pragma omp parallel for collapse(2)
+    #endif
+    for (int j = R_j.begin; j < R_j.end; j += R_j.step) {
+        for (int i = R_i.begin; i < R_i.end; i += R_i.step) {
             f(i, j);
         }
     }
@@ -34,105 +45,34 @@ template<typename Real, typename Derived>
 class Field {
 
 public:
-    const std::size_t n;
+    size_t n;
+    std::vector<Real> data;
 
-    explicit Field(std::size_t n_) : n(n_), data_(n_, Real(0)) {}
-    explicit Field(std::size_t n_, Real value_) : n(n_), data_(n_, Real(value_)) {}
+    explicit Field(size_t n_) : n(n_), data(n_, Real(0)) {}
+    explicit Field(size_t n_, Real value_) : n(n_), data(n_, Real(value_)) {}
 
-    virtual ~Field() = default;
-
-    Derived operator+(const Derived& other) const {
-        Derived result(static_cast<const Derived&>(*this));
-        parallel_for_all(result, [&](int i) {
-            result.data_[i] += other.data_[i];
-        });
-        return result;
-    }
-
-    Derived operator+(Real other) const {
-        Derived result(static_cast<const Derived&>(*this));
-        parallel_for_all(result, [&](int i) {
-            result.data_[i] += other;
-        });
-        return result;
-    }
-
-    Derived operator-(const Derived& other) const {
-        Derived result(static_cast<const Derived&>(*this));
-        parallel_for_all(result, [&](int i) {
-            result.data_[i] -= other.data_[i];
-        });
-        return result;
-    }
-
-    Derived operator-(Real other) const {
-        Derived result(static_cast<const Derived&>(*this));
-        parallel_for_all(result, [&](int i) {
-            result.data_[i] -= other;
-        });
-        return result;
-    }
-
-    Derived operator-() const {
-        Derived result(static_cast<const Derived&>(*this));
-        parallel_for_all(result, [&](int i) {
-            result.data_[i] = -result.data_[i];
-        });
-        return result;
-    }
-
-    Derived operator*(const Derived& other) const {
-        Derived result(static_cast<const Derived&>(*this));
-        parallel_for_all(result, [&](int i) {
-            result.data_[i] *= other.data_[i];
-        });
-        return result;
-    }
-
-    Derived operator*(Real other) const {
-        Derived result(static_cast<const Derived&>(*this));
-        parallel_for_all(result, [&](int i) {
-            result.data_[i] *= other;
-        });
-        return result;
-    }
-
-    Derived operator/(const Derived& other) const {
-        Derived result(static_cast<const Derived&>(*this));
-        parallel_for_all(result, [&](int i) {
-            result.data_[i] /= other.data_[i];
-        });
-        return result;
-    }
-
-    Derived operator/(Real other) const {
-        Derived result(static_cast<const Derived&>(*this));
-        parallel_for_all(result, [&](int i) {
-            result.data_[i] /= other;
-        });
-        return result;
-    }
-
-protected:
-    std::vector<Real> data_;
-
+    ~Field() = default;
+    Field(const Field&) = default;
+    Field(Field&&) noexcept = default;
+    Field& operator=(const Field&) = default;
+    Field& operator=(Field&&) noexcept = default;
 };
 
 template<typename Real>
 class Field1D : public Field<Real, Field1D<Real>> {
 
 public:
+    size_t ni;
     static constexpr int ndim = 1;
-    const std::size_t ni;
 
-    Field1D(std::size_t ni_) : Field<Real, Field1D<Real>>(ni_), ni(ni_) {}
-    Field1D(std::size_t ni_, Real value_) : Field<Real, Field1D<Real>>(ni_, value_), ni(ni_) {}
+    Field1D(size_t ni_) : Field<Real, Field1D<Real>>(ni_), ni(ni_) {}
+    Field1D(size_t ni_, Real value_) : Field<Real, Field1D<Real>>(ni_, value_), ni(ni_) {}
 
-    Real& operator()(std::size_t i) {
+    Real& operator()(size_t i) {
         return this->data[i];
     }
 
-    const Real& operator()(std::size_t i) const {
+    const Real& operator()(size_t i) const {
         return this->data[i];
     }
 
@@ -142,18 +82,22 @@ template<typename Real>
 class Field2D : public Field<Real, Field2D<Real>> {
 
 public:
+    size_t ni;
+    size_t nj;
     static constexpr int ndim = 2;
-    const std::size_t ni;
-    const std::size_t nj;
 
-    Field2D(std::size_t ni_, std::size_t nj_) : Field<Real, Field2D<Real>>(ni_ * nj_), ni(ni_), nj(nj_) {}
-    Field2D(std::size_t ni_, std::size_t nj_, Real value_) : Field<Real, Field2D<Real>>(ni_ * nj_, value_), ni(ni_), nj(nj_) {}
+    Field2D(size_t ni_, size_t nj_) : Field<Real, Field2D<Real>>(ni_ * nj_), ni(ni_), nj(nj_) {}
+    Field2D(size_t ni_, size_t nj_, Real value_) : Field<Real, Field2D<Real>>(ni_ * nj_, value_), ni(ni_), nj(nj_) {}
     
-    Real& operator()(std::size_t i, std::size_t j) {
+    Real& operator()(size_t i) {
+        return this->data[i];
+    }
+    
+    Real& operator()(size_t i, size_t j) {
         return this->data[j * ni + i];
     }
 
-    const Real& operator()(std::size_t i, std::size_t j) const {
+    const Real& operator()(size_t i, size_t j) const {
         return this->data[j * ni + i];
     }
 
@@ -161,7 +105,7 @@ public:
         std::ofstream out(filename, std::ios::binary);
         out.write(reinterpret_cast<const char*>(&this->ni), sizeof(this->ni));
         out.write(reinterpret_cast<const char*>(&this->nj), sizeof(this->nj));
-        out.write(reinterpret_cast<const char*>(this->data_.data()), this->data_.size() * sizeof(Real));
+        out.write(reinterpret_cast<const char*>(this->data.data()), this->data.size() * sizeof(Real));
     }
 
 };
@@ -175,8 +119,13 @@ inline void parallel_for_all(const Field<Real, Derived>& field, Func&& func)
 } // namespace virta
 
 int main() {
-    std::cout << "Hello, World!" << '\n';
-    virta::Field2D<double> f1(100, 100, 1.0); 
-    virta::Field2D<double> f2 = f1 / 7.2315;
-    f2.write_binary("output.bin");
+    virta::Field2D<double> f1(10000, 10000, 215.025);
+    virta::Field2D<double> f2(10000, 10000, 0.12513);
+    auto t0 = std::chrono::high_resolution_clock::now();
+    parallel_for_all(f1, [&](int i) {
+        f1(i) = f2(i) * std::pow((f1(i) + f2(i) / (f1(i) - f2(i))), 3.4462) * std::sqrt(f1(i) + f2(i) * f1(i));
+    });
+    auto t1 = std::chrono::high_resolution_clock::now();
+    std::cout << "Time elapsed: " << std::chrono::duration<double>(t1 - t0).count() << " s" << '\n';
+    //f2.write_binary("output.bin");
 }
