@@ -9,19 +9,19 @@
 
 namespace virta {
 
+template <typename T>
 struct Range {
-    int begin;
-    int end;
-    int step;
+    T begin;
+    T end;
+    T step;
 
-    Range(int begin_, int end_, int step_ = 1) : begin(begin_), end(end_), step(step_) {}
+    Range(T begin_, T end_, T step_ = 1) : begin(begin_), end(end_), step(step_) {}
 };
 
 template <typename Func>
-inline void parallel_for(const Range& R_i, Func&& f)
-{
+inline void parallel_for(const Range<int>& R_i, Func&& f) {
     #ifdef USE_OMP
-        #pragma omp parallel for
+        #pragma omp for
     #endif
     for (int i = R_i.begin; i < R_i.end; i += R_i.step) {
         f(i);
@@ -29,16 +29,27 @@ inline void parallel_for(const Range& R_i, Func&& f)
 }
 
 template <typename Func>
-inline void parallel_for(const Range& R_i, const Range& R_j, Func&& f)
-{
+inline void parallel_for(const Range<int>& R_i, const Range<int>& R_j, Func&& f) {
     #ifdef USE_OMP
-        #pragma omp parallel for collapse(2)
+        #pragma omp for collapse(2)
     #endif
     for (int j = R_j.begin; j < R_j.end; j += R_j.step) {
         for (int i = R_i.begin; i < R_i.end; i += R_i.step) {
             f(i, j);
         }
     }
+}
+
+template <typename Func>
+inline void parallel_region(Func&& f) {
+#ifdef USE_OMP
+    #pragma omp parallel 
+    {
+        f();
+    }
+#else
+    f();
+#endif
 }
 
 template<typename Real, typename Derived>
@@ -117,17 +128,21 @@ public:
 template <typename Func, typename Real, typename Derived>
 inline void parallel_for_all(const Field<Real, Derived>& field, Func&& func)
 {
-    parallel_for(Range(0, field.n), std::forward<Func>(func));
+    parallel_for(Range<int>(0, field.n), std::forward<Func>(func));
 }
 
 } // namespace virta
 
 int main() {
-    virta::Field2D<double> f1(10000, 10000, 215.025);
-    virta::Field2D<double> f2(10000, 10000, 0.12513);
+    virta::Field2D<double> f1(1000, 1000, 215.025);
+    virta::Field2D<double> f2(1000, 1000, 0.12513);
     auto t0 = std::chrono::high_resolution_clock::now();
-    parallel_for_all(f1, [&](int i) {
-        f1(i) = f2(i) * std::pow((f1(i) + f2(i) / (f1(i) - f2(i))), 3.4462) * std::sqrt(f1(i) + f2(i) * f1(i));
+    virta::parallel_region([&]() {
+        for (int n=0; n<1000; n++) {
+            parallel_for_all(f1, [&](int i) {
+                f1(i) = f2(i) * std::pow((f1(i) + f2(i) / (f1(i) - f2(i))), 3.4462) * std::sqrt(f1(i) + f2(i) * f1(i));
+            });
+        }
     });
     auto t1 = std::chrono::high_resolution_clock::now();
     std::cout << "Time elapsed: " << std::chrono::duration<double>(t1 - t0).count() << " s" << '\n';
