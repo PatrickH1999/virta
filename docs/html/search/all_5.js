@@ -1,0 +1,5 @@
+var searchData=
+[
+  ['operator_28_29_0',['operator()',['../classvirta_1_1Field1D.html#a1d1c5d5ca0e2ce162ce6b7b7700a21aa',1,'virta::Field1D::operator()(size_t i) noexcept'],['../classvirta_1_1Field1D.html#a06fbaf1435fa66068c8dc7704d5ef155',1,'virta::Field1D::operator()(size_t i) const noexcept'],['../classvirta_1_1Field2D.html#a8bdd10d20fadf5ab28b1f856cdd76535',1,'virta::Field2D::operator()(size_t i) noexcept'],['../classvirta_1_1Field2D.html#a9e03407cccbb21bf4355982e76264024',1,'virta::Field2D::operator()(size_t i) const noexcept'],['../classvirta_1_1Field2D.html#a8f3662879d06aee3c210c37347641cb0',1,'virta::Field2D::operator()(size_t i, size_t j) noexcept'],['../classvirta_1_1Field2D.html#a0ab8ea6071ea72aadf3eff962af9bc7a',1,'virta::Field2D::operator()(size_t i, size_t j) const noexcept']]],
+  ['operator_3d_1',['operator=',['../classvirta_1_1Field.html#a9feb302935215c7dc6e92324ba8a2128',1,'virta::Field::operator=(const Field &amp;)=default'],['../classvirta_1_1Field.html#a9a5bd13e090918e5588e01a7f0264df2',1,'virta::Field::operator=(Field &amp;&amp;) noexcept=default']]]
+];

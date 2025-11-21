@@ -1,0 +1,4 @@
+<map id="virta::parallel_for" name="virta::parallel_for">
+<area shape="rect" id="node1" title="Execute a 2D parallel loop over two nested Ranges." alt="" coords="192,5,311,32"/>
+<area shape="rect" id="node2" href="$group__Functions.html#ga696646d187e5e7a79c763e3fe30e630b" title="Convenience wrapper that loops over all entries of a Field." alt="" coords="5,5,144,32"/>
+</map>
