@@ -12,6 +12,7 @@
 build/
 bin/
 lib/
+docs/
 
 *.tmp
 *.log
