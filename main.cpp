@@ -7,8 +7,8 @@
     #include <omp.h>
 #endif
 
-#include "Functions.H"
-#include "Field2D.H"
+#include "src/Functions.H"
+#include "src/Field2D.H"
 
 int main() {
     virta::Field2D<double> f1(1000, 1000, 215.025);
