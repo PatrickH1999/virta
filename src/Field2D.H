@@ -1,6 +1,10 @@
 #ifndef FIELD2D_H
 #define FIELD2D_H
 
+#include <cstddef>
+#include <fstream>
+#include <string>
+
 #include "Field.H"
 
 namespace virta {
@@ -13,22 +17,22 @@ public:
     size_t nj;
     static constexpr int ndim = 2;
 
-    Field2D(size_t ni_, size_t nj_) : Field<Real, Field2D<Real>>(ni_ * nj_), ni(ni_), nj(nj_) {}
-    Field2D(size_t ni_, size_t nj_, Real value_) : Field<Real, Field2D<Real>>(ni_ * nj_, value_), ni(ni_), nj(nj_) {}
+    Field2D(size_t ni_, size_t nj_) noexcept : Field<Real, Field2D<Real>>(ni_ * nj_), ni(ni_), nj(nj_) {}
+    Field2D(size_t ni_, size_t nj_, Real value_) noexcept : Field<Real, Field2D<Real>>(ni_ * nj_, value_), ni(ni_), nj(nj_) {}
     
-    inline Real& operator()(size_t i) {
+    inline Real& operator()(size_t i) noexcept {
         return this->data[i];
     }
     
-    inline const Real& operator()(size_t i) const {
+    inline const Real& operator()(size_t i) const noexcept {
         return this->data[i];
     }
     
-    inline Real& operator()(size_t i, size_t j) {
+    inline Real& operator()(size_t i, size_t j) noexcept {
         return this->data[j * ni + i];
     }
 
-    inline const Real& operator()(size_t i, size_t j) const {
+    inline const Real& operator()(size_t i, size_t j) const noexcept {
         return this->data[j * ni + i];
     }
 

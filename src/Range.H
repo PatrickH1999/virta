@@ -1,6 +1,8 @@
 #ifndef RANGE_H
 #define RANGE_H
 
+#include <cstddef>
+
 namespace virta {
 
 template <typename T>
@@ -9,7 +11,7 @@ struct Range {
     T end;
     T step;
 
-    Range(T begin_, T end_, T step_ = 1) : begin(begin_), end(end_), step(step_) {}
+    constexpr Range(T begin_, T end_, T step_ = 1) noexcept : begin(begin_), end(end_), step(step_) {}
 };
 
 } // namespace virta

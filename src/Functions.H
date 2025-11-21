@@ -1,6 +1,11 @@
 #ifndef FUNCTIONS_H
 #define FUNCTIONS_H
 
+#include <utility>
+#ifdef USE_OMP
+    #include <omp.h>
+#endif
+
 #include "Field.H"
 #include "Range.H"
 

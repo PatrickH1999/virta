@@ -1,11 +1,6 @@
 #include <chrono>
 #include <cmath>
-#include <fstream>
 #include <iostream>
-#include <vector>
-#ifdef USE_OMP
-    #include <omp.h>
-#endif
 
 #include "src/Functions.H"
 #include "src/Field2D.H"

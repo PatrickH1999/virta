@@ -1,6 +1,9 @@
 #ifndef FIELD_H
 #define FIELD_H
 
+#include <cstddef>
+#include <vector>
+
 namespace virta {
 
 template<typename Real, typename Derived>
@@ -10,8 +13,8 @@ public:
     size_t n;
     std::vector<Real> data;
 
-    explicit Field(size_t n_) : n(n_), data(n_, Real(0)) {}
-    explicit Field(size_t n_, Real value_) : n(n_), data(n_, Real(value_)) {}
+    explicit Field(size_t n_) noexcept : n(n_), data(n_, Real(0)) {}
+    explicit Field(size_t n_, Real value_) noexcept : n(n_), data(n_, Real(value_)) {}
 
     ~Field() = default;
     Field(const Field&) = default;
