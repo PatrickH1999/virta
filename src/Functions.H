@@ -7,6 +7,7 @@
 #endif
 
 #include "Field.H"
+#include "Field2D.H"
 #include "Range.H"
 
 namespace virta {
@@ -102,7 +103,25 @@ inline void parallel_for_all(const Field<Real, Derived>& field, Func&& func)
     parallel_for(Range<int>(0, field.n), std::forward<Func>(func));
 }
 
-/** @} */ // end of ParallelFunctions
+/**
+ * @brief
+ *
+ * @tparam Func     
+ * @tparam Real     
+ * @tparam Derived  
+ * @param field     
+ * @param func      
+ */
+template <typename Real>
+inline void ddx(const Field2D<Real>& base, Field2D<Real>& deriv, Real dx, int ghost_cell_margin = 0)
+{
+    auto& gcm = ghost_cell_margin;
+    parallel_for(Range<int>(gcm, base.ni - gcm), Range<int>(gcm, base.nj - gcm), [&] (int i, int j) {
+        deriv(i,j) = (base(i + 1, j) - base(i - 1, j)) / (2 * dx);
+    });
+}
+
+/** @} */ // end of Functions
 
 } // namespace virta
 
