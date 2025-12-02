@@ -4,30 +4,32 @@ project(virta LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-option(USE_OMP "Enable OpenMP parallelization" ON)
+option(USE_OMP "Enable OpenMP" ON)
 
-if (USE_OMP)
+include_directories(${PROJECT_SOURCE_DIR}/src)
+
+set(EXECUTABLES
+    main
+)
+
+if(USE_OMP)
     find_package(OpenMP REQUIRED)
-    add_compile_definitions(USE_OMP)
 endif()
 
-add_executable(main.ex main.cpp)
+foreach(EXE ${EXECUTABLES})
+    add_executable(${EXE}.ex ${EXE}.cpp)
 
-target_include_directories(main.ex PRIVATE ${PROJECT_SOURCE_DIR}/src)
+    if(USE_OMP)
+        target_link_libraries(${EXE}.ex PRIVATE OpenMP::OpenMP_CXX)
+        target_compile_definitions(${EXE}.ex PRIVATE USE_OMP)
+    endif()
 
-if (USE_OMP)
-    target_link_libraries(main.ex PUBLIC OpenMP::OpenMP_CXX)
-endif()
-
-target_compile_options(main.ex PRIVATE -O3 -march=native)
+    target_compile_options(${EXE}.ex PRIVATE -O3 -march=native)
+endforeach()
 
 find_package(Doxygen REQUIRED)
 
-set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile)
-set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile.out)
-
 add_custom_target(doc
-    COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_IN}
+    COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    BYPRODUCTS ${DOXYGEN_OUT}
 )
