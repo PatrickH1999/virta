@@ -5,16 +5,18 @@
 #include "src/Functions.H"
 #include "src/Field2D.H"
 
+using DefaultScheme = virta::Upwind;
+
 int main() {
     constexpr double PI = 3.14159265358979323846264338327950;
-    constexpr int N = 1000;
+    constexpr int N = 4096;
     constexpr double dx = (16 * PI) / N;
-    constexpr int max_step = 500;
+    constexpr int max_step = 100;
     constexpr double dt = 0.001;
 
     constexpr double g = 9.81;
     
-    virta::Field2D<double> h(N, N, 0.0);
+    virta::Field2D<double> h(N, N, 1.0);
     virta::Field2D<double> u(N, N, 0.0);
     virta::Field2D<double> v(N, N, 0.0);
    
@@ -37,7 +39,7 @@ int main() {
         // Initialize:
         virta::parallel_for(virta::Range<int>(0, N), virta::Range<int>(0, N), [&](int i, int j) {
             double r = std::sqrt(std::pow((i - 0.5 * N) * dx, 2) + std::pow((j - 0.5 * N) * dx, 2));
-            h(i, j) = 0.5 + 0.5 * std::tanh(-r + 0.1);
+            h(i, j) += 0.5 + 0.5 * std::tanh(-r + 0.5 * PI);
 
             hu(i, j) = h(i, j) * u(i, j);
             hv(i, j) = h(i, j) * v(i, j);
@@ -49,12 +51,12 @@ int main() {
         // Compute:
         for (int n = 0; n < max_step; n++) {
             // Derivatives:
-            virta::ddx(hu, dhu_dx, dx, 1);
-            virta::ddy(hv, dhv_dy, dx, 1);
-            virta::ddx(huu, dhuu_dx, dx, 1);
-            virta::ddy(huv, dhuv_dy, dx, 1);
-            virta::ddx(huv, dhuv_dx, dx, 1);
-            virta::ddy(hvv, dhvv_dy, dx, 1);
+            virta::ddx<DefaultScheme>(hu, dhu_dx, dx, u, 1);
+            virta::ddy<DefaultScheme>(hv, dhv_dy, dx, v, 1);
+            virta::ddx<DefaultScheme>(huu, dhuu_dx, dx, u, 1);
+            virta::ddy<DefaultScheme>(huv, dhuv_dy, dx, v, 1);
+            virta::ddx<DefaultScheme>(huv, dhuv_dx, dx, u, 1);
+            virta::ddy<DefaultScheme>(hvv, dhvv_dy, dx, v, 1);
 
             // Time advance:
             virta::parallel_for(virta::Range<int>(0, N), virta::Range<int>(0, N), [&](int i, int j) {

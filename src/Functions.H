@@ -103,21 +103,54 @@ inline void parallel_for_all(const Field<Real, Derived>& field, Func&& func)
     parallel_for(Range<int>(0, field.n), std::forward<Func>(func));
 }
 
-template <typename Real>
-inline void ddx(const Field2D<Real>& base, Field2D<Real>& deriv, Real dx, int ghost_cell_margin = 0)
+struct Central {};
+struct Upwind {};
+
+template <typename Scheme, typename Real>
+inline void ddx(const Field2D<Real>& base, Field2D<Real>& deriv, Real dx, const Field2D<Real>& u, int ghost_cell_margin = 0)
 {
+    constexpr bool central = std::is_same_v<Scheme, Central>;
+    constexpr bool upwind = std::is_same_v<Scheme, Upwind>;
+
     auto& gcm = ghost_cell_margin;
     parallel_for(Range<int>(gcm, base.ni - gcm), Range<int>(gcm, base.nj - gcm), [&] (int i, int j) {
-        deriv(i,j) = (base(i + 1, j) - base(i - 1, j)) / (2 * dx);
+        if constexpr (central) {
+            deriv(i, j) = (base(i + 1, j) - base(i - 1, j)) / (2 * dx);
+        } else if constexpr (upwind) {
+            if (u(i, j) > 0) {
+                deriv(i, j) = (base(i, j) - base(i - 1, j)) / dx;
+            } else if (u(i, j) < 0) {
+                deriv(i, j) = (base(i + 1, j) - base(i, j)) / dx;
+            } else {
+                deriv(i, j) = (base(i + 1, j) - base(i - 1, j)) / (2 * dx);
+            }
+        } else {
+            static_assert(!sizeof(Scheme), "Unknown finite-difference scheme in ddx.");
+        }
     });
 }
 
-template <typename Real>
-inline void ddy(const Field2D<Real>& base, Field2D<Real>& deriv, Real dy, int ghost_cell_margin = 0)
+template <typename Scheme, typename Real>
+inline void ddy(const Field2D<Real>& base, Field2D<Real>& deriv, Real dy, const Field2D<Real>& v, int ghost_cell_margin = 0)
 {
+    constexpr bool central = std::is_same_v<Scheme, Central>;
+    constexpr bool upwind = std::is_same_v<Scheme, Upwind>;
+
     auto& gcm = ghost_cell_margin;
     parallel_for(Range<int>(gcm, base.ni - gcm), Range<int>(gcm, base.nj - gcm), [&] (int i, int j) {
-        deriv(i,j) = (base(i, j + 1) - base(i, j - 1)) / (2 * dy);
+        if constexpr (central) {
+            deriv(i, j) = (base(i, j + 1) - base(i, j - 1)) / (2 * dy);
+        } else if constexpr (upwind) {
+            if (v(i, j) > 0) {
+                deriv(i, j) = (base(i, j) - base(i, j - 1)) / dy;
+            } else if (v(i, j) < 0) {
+                deriv(i, j) = (base(i, j + 1) - base(i, j)) / dy;
+            } else {
+                deriv(i, j) = (base(i, j + 1) - base(i, j - 1)) / (2 * dy);
+            }
+        } else {
+            static_assert(!sizeof(Scheme), "Unknown finite-difference scheme in ddy.");
+        }
     });
 }
 
