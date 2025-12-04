@@ -33,7 +33,11 @@ namespace virta {
 template <typename Func>
 inline void parallel_for(const Range<int>& R_i, Func&& f) {
 #ifdef USE_OMP
-    #pragma omp for
+    #ifdef USE_SIMD
+        #pragma omp for simd
+    #else
+        #pragma omp for
+    #endif
 #endif
     for (int i = R_i.begin; i < R_i.end; i += R_i.step) {
         f(i);
@@ -56,7 +60,11 @@ inline void parallel_for(const Range<int>& R_i,
                          Func&& f)
 {
 #ifdef USE_OMP
-    #pragma omp for collapse(2)
+    #ifdef USE_SIMD
+        #pragma omp for collapse(2) simd
+    #else
+        #pragma omp for collapse(2)
+    #endif
 #endif
     for (int j = R_j.begin; j < R_j.end; j += R_j.step) {
         for (int i = R_i.begin; i < R_i.end; i += R_i.step) {
@@ -112,17 +120,21 @@ inline void ddx(const Field2D<Real>& base, Field2D<Real>& deriv, Real dx, const 
     constexpr bool central = std::is_same_v<Scheme, Central>;
     constexpr bool upwind = std::is_same_v<Scheme, Upwind>;
 
+    auto base_ = base.view();
+    auto deriv_ = deriv.view();
+    auto u_ = u.view();
+
     auto& gcm = ghost_cell_margin;
-    parallel_for(Range<int>(gcm, base.ni - gcm), Range<int>(gcm, base.nj - gcm), [&] (int i, int j) {
+    parallel_for(Range<int>(gcm, base.ni - gcm), Range<int>(gcm, base.nj - gcm), [&](int i, int j) {
         if constexpr (central) {
-            deriv(i, j) = (base(i + 1, j) - base(i - 1, j)) / (2 * dx);
+            deriv_(i, j) = (base_(i + 1, j) - base_(i - 1, j)) / (2 * dx);
         } else if constexpr (upwind) {
-            if (u(i, j) > 0) {
-                deriv(i, j) = (base(i, j) - base(i - 1, j)) / dx;
+            if (u_(i, j) > 0) {
+                deriv_(i, j) = (base_(i, j) - base_(i - 1, j)) / dx;
             } else if (u(i, j) < 0) {
-                deriv(i, j) = (base(i + 1, j) - base(i, j)) / dx;
+                deriv_(i, j) = (base_(i + 1, j) - base_(i, j)) / dx;
             } else {
-                deriv(i, j) = (base(i + 1, j) - base(i - 1, j)) / (2 * dx);
+                deriv_(i, j) = (base_(i + 1, j) - base_(i - 1, j)) / (2 * dx);
             }
         } else {
             static_assert(!sizeof(Scheme), "Unknown finite-difference scheme in ddx.");
@@ -136,17 +148,21 @@ inline void ddy(const Field2D<Real>& base, Field2D<Real>& deriv, Real dy, const 
     constexpr bool central = std::is_same_v<Scheme, Central>;
     constexpr bool upwind = std::is_same_v<Scheme, Upwind>;
 
+    auto base_ = base.view();
+    auto deriv_ = deriv.view();
+    auto v_ = v.view();
+
     auto& gcm = ghost_cell_margin;
-    parallel_for(Range<int>(gcm, base.ni - gcm), Range<int>(gcm, base.nj - gcm), [&] (int i, int j) {
+    parallel_for(Range<int>(gcm, base.ni - gcm), Range<int>(gcm, base.nj - gcm), [&](int i, int j) {
         if constexpr (central) {
-            deriv(i, j) = (base(i, j + 1) - base(i, j - 1)) / (2 * dy);
+            deriv_(i, j) = (base_(i, j + 1) - base_(i, j - 1)) / (2 * dy);
         } else if constexpr (upwind) {
-            if (v(i, j) > 0) {
-                deriv(i, j) = (base(i, j) - base(i, j - 1)) / dy;
+            if (v_(i, j) > 0) {
+                deriv_(i, j) = (base_(i, j) - base_(i, j - 1)) / dy;
             } else if (v(i, j) < 0) {
-                deriv(i, j) = (base(i, j + 1) - base(i, j)) / dy;
+                deriv_(i, j) = (base_(i, j + 1) - base_(i, j)) / dy;
             } else {
-                deriv(i, j) = (base(i, j + 1) - base(i, j - 1)) / (2 * dy);
+                deriv_(i, j) = (base_(i, j + 1) - base_(i, j - 1)) / (2 * dy);
             }
         } else {
             static_assert(!sizeof(Scheme), "Unknown finite-difference scheme in ddy.");
@@ -156,65 +172,73 @@ inline void ddy(const Field2D<Real>& base, Field2D<Real>& deriv, Real dy, const 
 
 template <typename Real>
 inline void setBoundaryILowDirichlet(Field2D<Real>& field, Real value, int ghost_cell_margin = 0) {
+    auto field_ = field.view();
     auto& gcm = ghost_cell_margin;
-    parallel_for(Range<int>(0, gcm), Range<int>(gcm, field.nj - gcm), [&] (int i, int j) {
-        field(i, j) = value;
+    parallel_for(Range<int>(0, gcm), Range<int>(gcm, field.nj - gcm), [&](int i, int j) {
+        field_(i, j) = value;
     });
 }
 
 template <typename Real>
 inline void setBoundaryIHighDirichlet(Field2D<Real>& field, Real value, int ghost_cell_margin = 0) {
+    auto field_ = field.view();
     auto& gcm = ghost_cell_margin;
-    parallel_for(Range<int>(field.ni - gcm, field.ni), Range<int>(gcm, field.nj - gcm), [&] (int i, int j) {
-        field(i, j) = value;
+    parallel_for(Range<int>(field.ni - gcm, field.ni), Range<int>(gcm, field.nj - gcm), [&](int i, int j) {
+        field_(i, j) = value;
     });
 }
 
 template <typename Real>
 inline void setBoundaryJLowDirichlet(Field2D<Real>& field, Real value, int ghost_cell_margin = 0) {
+    auto field_ = field.view();
     auto& gcm = ghost_cell_margin;
-    parallel_for(Range<int>(gcm, field.ni - gcm), Range<int>(0, gcm), [&] (int i, int j) {
-        field(i, j) = value;
+    parallel_for(Range<int>(gcm, field.ni - gcm), Range<int>(0, gcm), [&](int i, int j) {
+        field_(i, j) = value;
     });
 }
 
 template <typename Real>
 inline void setBoundaryJHighDirichlet(Field2D<Real>& field, Real value, int ghost_cell_margin = 0) {
+    auto field_ = field.view();
     auto& gcm = ghost_cell_margin;
-    parallel_for(Range<int>(gcm, field.ni - gcm), Range<int>(field.nj - gcm, field.nj), [&] (int i, int j) {
-        field(i, j) = value;
+    parallel_for(Range<int>(gcm, field.ni - gcm), Range<int>(field.nj - gcm, field.nj), [&](int i, int j) {
+        field_(i, j) = value;
     });
 }
 
 template <typename Real>
 inline void setBoundaryILowNeumann(Field2D<Real>& field, int ghost_cell_margin = 0) {
+    auto field_ = field.view();
     auto& gcm = ghost_cell_margin;
-    parallel_for(Range<int>(0, gcm), Range<int>(gcm, field.nj - gcm), [&] (int i, int j) {
-        field(i, j) = field(gcm, j);
+    parallel_for(Range<int>(0, gcm), Range<int>(gcm, field.nj - gcm), [&](int i, int j) {
+        field_(i, j) = field_(gcm, j);
     });
 }
 
 template <typename Real>
 inline void setBoundaryIHighNeumann(Field2D<Real>& field, int ghost_cell_margin = 0) {
+    auto field_ = field.view();
     auto& gcm = ghost_cell_margin;
-    parallel_for(Range<int>(field.ni - gcm, field.ni), Range<int>(gcm, field.nj - gcm), [&] (int i, int j) {
-        field(i, j) = field(field.ni - gcm - 1, j);
+    parallel_for(Range<int>(field.ni - gcm, field.ni), Range<int>(gcm, field.nj - gcm), [&](int i, int j) {
+        field_(i, j) = field_(field.ni - gcm - 1, j);
     });
 }
 
 template <typename Real>
 inline void setBoundaryJLowNeumann(Field2D<Real>& field, int ghost_cell_margin = 0) {
+    auto field_ = field.view();
     auto& gcm = ghost_cell_margin;
-    parallel_for(Range<int>(gcm, field.ni - gcm), Range<int>(0, gcm), [&] (int i, int j) {
-        field(i, j) = field(i, gcm);
+    parallel_for(Range<int>(gcm, field.ni - gcm), Range<int>(0, gcm), [&](int i, int j) {
+        field_(i, j) = field_(i, gcm);
     });
 }
 
 template <typename Real>
 inline void setBoundaryJHighNeumann(Field2D<Real>& field, int ghost_cell_margin = 0) {
+    auto field_ = field.view();
     auto& gcm = ghost_cell_margin;
-    parallel_for(Range<int>(gcm, field.ni - gcm), Range<int>(field.nj - gcm, field.nj), [&] (int i, int j) {
-        field(i, j) = field(i, field.nj - gcm - 1);
+    parallel_for(Range<int>(gcm, field.ni - gcm), Range<int>(field.nj - gcm, field.nj), [&](int i, int j) {
+        field_(i, j) = field_(i, field.nj - gcm - 1);
     });
 }
 

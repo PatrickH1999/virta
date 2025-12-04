@@ -5,6 +5,7 @@
 #include <fstream>
 #include <string>
 #include "Field.H"
+#include "FieldView2D.H"
 
 namespace virta {
 
@@ -77,6 +78,14 @@ public:
         out.write(reinterpret_cast<const char*>(&this->nj), sizeof(this->nj));
         out.write(reinterpret_cast<const char*>(this->data.data()),
                   this->data.size() * sizeof(Real));
+    }
+
+    auto view() {
+        return FieldView2D<Real>{this->data.data(), (int)ni};
+    }
+
+    auto view() const {
+        return FieldView2D<const Real>{this->data.data(), (int)ni};
     }
 };
 
