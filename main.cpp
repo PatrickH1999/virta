@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "src/Functions.H"
+#include "src/BC.H"
 #include "src/Field2D.H"
 
 using DefaultScheme = virta::Central;
@@ -11,7 +12,7 @@ int main() {
     constexpr double PI = 3.14159265358979323846264338327950;
     constexpr int N = 256;
     constexpr double dx = (16 * PI) / N;
-    constexpr int max_step = 100000;
+    constexpr int max_step = 10000;
     constexpr double dt = 0.00001;
 
     constexpr double g = 9.81;
@@ -52,18 +53,18 @@ int main() {
         // Compute:
         for (int n = 0; n < max_step; n++) {
             // Boundary conditions:
-            virta::setBoundaryILowNeumann(h, 1); 
-            virta::setBoundaryIHighNeumann(h, 1); 
-            virta::setBoundaryJLowNeumann(h, 1); 
-            virta::setBoundaryJHighNeumann(h, 1); 
-            virta::setBoundaryILowNeumann(u, 1); 
-            virta::setBoundaryIHighNeumann(u, 1); 
-            virta::setBoundaryJLowNeumann(u, 1); 
-            virta::setBoundaryJHighNeumann(u, 1); 
-            virta::setBoundaryILowNeumann(v, 1); 
-            virta::setBoundaryIHighNeumann(v, 1); 
-            virta::setBoundaryJLowNeumann(v, 1); 
-            virta::setBoundaryJHighNeumann(v, 1); 
+            virta::BC::setILowNeumann(h, 1); 
+            virta::BC::setIHighNeumann(h, 1); 
+            virta::BC::setJLowNeumann(h, 1); 
+            virta::BC::setJHighNeumann(h, 1); 
+            virta::BC::setILowNeumann(u, 1); 
+            virta::BC::setIHighNeumann(u, 1); 
+            virta::BC::setJLowNeumann(u, 1); 
+            virta::BC::setJHighNeumann(u, 1); 
+            virta::BC::setILowNeumann(v, 1); 
+            virta::BC::setIHighNeumann(v, 1); 
+            virta::BC::setJLowNeumann(v, 1); 
+            virta::BC::setJHighNeumann(v, 1); 
 
             // Derivatives:
             virta::ddx<DefaultScheme>(hu, dhu_dx, dx, u, 1);
