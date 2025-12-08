@@ -104,18 +104,26 @@ inline void parallel_for_all(const Field<Real, Derived>& field, Func&& func)
 }
 
 struct Central {};
+struct Central4 {};
+struct Central6 {};
 struct Upwind {};
 
 template <typename Scheme, typename Real>
 inline void ddx(const Field2D<Real>& base, Field2D<Real>& deriv, Real dx, const Field2D<Real>& u, int ghost_cell_margin = 0)
 {
     constexpr bool central = std::is_same_v<Scheme, Central>;
+    constexpr bool central4 = std::is_same_v<Scheme, Central4>;
+    constexpr bool central6 = std::is_same_v<Scheme, Central6>;
     constexpr bool upwind = std::is_same_v<Scheme, Upwind>;
 
     auto& gcm = ghost_cell_margin;
     parallel_for(Range<int>(gcm, base.ni - gcm), Range<int>(gcm, base.nj - gcm), [&] (int i, int j) {
         if constexpr (central) {
             deriv(i, j) = (base(i + 1, j) - base(i - 1, j)) / (2 * dx);
+        } else if constexpr (central4) {
+            deriv(i, j) = (-base(i + 2, j) + 8 * base(i + 1, j) - 8 * base(i - 1, j) + base(i - 2, j)) / (12 * dx);
+        } else if constexpr (central6) {
+            deriv(i, j) = (-base(i + 3, j) + 9 * base(i + 2, j) - 45 * base(i + 1, j) + 45 * base(i - 1, j) - 9 * base(i - 2, j) + base(i - 3, j)) / (60 * dx);
         } else if constexpr (upwind) {
             if (u(i, j) > 0) {
                 deriv(i, j) = (base(i, j) - base(i - 1, j)) / dx;
@@ -134,12 +142,18 @@ template <typename Scheme, typename Real>
 inline void ddy(const Field2D<Real>& base, Field2D<Real>& deriv, Real dy, const Field2D<Real>& v, int ghost_cell_margin = 0)
 {
     constexpr bool central = std::is_same_v<Scheme, Central>;
+    constexpr bool central4 = std::is_same_v<Scheme, Central4>;
+    constexpr bool central6 = std::is_same_v<Scheme, Central6>;
     constexpr bool upwind = std::is_same_v<Scheme, Upwind>;
 
     auto& gcm = ghost_cell_margin;
     parallel_for(Range<int>(gcm, base.ni - gcm), Range<int>(gcm, base.nj - gcm), [&] (int i, int j) {
         if constexpr (central) {
             deriv(i, j) = (base(i, j + 1) - base(i, j - 1)) / (2 * dy);
+        } else if constexpr (central4) {
+            deriv(i, j) = (-base(i, j + 2) + 8 * base(i, j + 1) - 8 * base(i, j - 1) + base(i, j - 2)) / (12 * dy);
+        } else if constexpr (central6) {
+            deriv(i, j) = (-base(i, j + 3) + 9 * base(i, j + 2) - 45 * base(i, j + 1) + 45 * base(i, j - 1) - 9 * base(i, j - 2) + base(i, j - 3)) / (60 * dy);
         } else if constexpr (upwind) {
             if (v(i, j) > 0) {
                 deriv(i, j) = (base(i, j) - base(i, j - 1)) / dy;
