@@ -5,44 +5,48 @@
 #include "src/Functions.H"
 #include "src/BC.H"
 #include "src/Field2D.H"
+#include "src/Prob.H"
 
-using DefaultScheme = virta::Central6;
+using DefaultScheme = virta::Central;
+using Real = double;
 
 int main() {
-    constexpr double PI = 3.14159265358979323846264338327950;
-    constexpr int N = 512;
-    constexpr double dx = (16 * PI) / N;
-    constexpr int max_step = 30000;
-    constexpr double dt = 0.00001;
+    virta::Prob<Real, virta::Field2D<Real>> prob(1000, 1000);
+
+    constexpr Real PI = 3.14159265358979323846264338327950;
+    constexpr int N = 1024;
+    constexpr Real dx = (16 * PI) / N;
+    constexpr int max_step = 12500;
+    constexpr Real dt = 0.00001;
     constexpr int gcm = 3;
 
-    constexpr double g = 9.81;
+    constexpr Real g = 9.81;
     
-    virta::Field2D<double> h(N, N, 0.0);
-    virta::Field2D<double> u(N, N, 0.0);
-    virta::Field2D<double> v(N, N, 0.0);
+    virta::Field2D<Real> h(N, N, 0.0);
+    virta::Field2D<Real> u(N, N, 0.0);
+    virta::Field2D<Real> v(N, N, 0.0);
    
-    virta::Field2D<double> hu = h;
-    virta::Field2D<double> hv = h;
-    virta::Field2D<double> huu = h;
-    virta::Field2D<double> huv = h;
-    virta::Field2D<double> hvv = h;
+    virta::Field2D<Real> hu = h;
+    virta::Field2D<Real> hv = h;
+    virta::Field2D<Real> huu = h;
+    virta::Field2D<Real> huv = h;
+    virta::Field2D<Real> hvv = h;
 
-    virta::Field2D<double> dhu_dx = h;
-    virta::Field2D<double> dhv_dy = h;
-    virta::Field2D<double> dhuu_dx = h;
-    virta::Field2D<double> dhuv_dy = h;
-    virta::Field2D<double> dhuv_dx = h;
-    virta::Field2D<double> dhvv_dy = h;
+    virta::Field2D<Real> dhu_dx = h;
+    virta::Field2D<Real> dhv_dy = h;
+    virta::Field2D<Real> dhuu_dx = h;
+    virta::Field2D<Real> dhuv_dy = h;
+    virta::Field2D<Real> dhuv_dx = h;
+    virta::Field2D<Real> dhvv_dy = h;
 
     auto t0 = std::chrono::high_resolution_clock::now();
     virta::parallel_region([&]() {
         
         // Initialize:
         virta::parallel_for(virta::Range<int>(0, N), virta::Range<int>(0, N), [&](int i, int j) {
-            double r1 = std::sqrt(std::pow((i - 0.25 * N) * dx, 2) + std::pow((j - 0.5 * N) * dx, 2));
-            double r2 = std::sqrt(std::pow((i - 0.75 * N) * dx, 2) + std::pow((j - 0.5 * N) * dx, 2));
-            //double r = std::abs(i * dx - 0.5 * N * dx);
+            Real r1 = std::sqrt(std::pow((i - 0.25 * N) * dx, 2) + std::pow((j - 0.5 * N) * dx, 2));
+            Real r2 = std::sqrt(std::pow((i - 0.75 * N) * dx, 2) + std::pow((j - 0.5 * N) * dx, 2));
+            //Real r = std::abs(i * dx - 0.5 * N * dx);
             h(i, j) = 1000 + 5 * std::tanh(-r1 + 0.5 * PI) + 5 * std::tanh(-r2 + 0.5 * PI);
 
             hu(i, j) = h(i, j) * u(i, j);
@@ -92,5 +96,5 @@ int main() {
     });
     auto t1 = std::chrono::high_resolution_clock::now();
     h.write_binary("h.virta.shallow_water.plt");
-    std::cout << "Time elapsed: " << std::chrono::duration<double>(t1 - t0).count() << " s" << '\n';
+    std::cout << "Time elapsed: " << std::chrono::duration<Real>(t1 - t0).count() << " s" << '\n';
 }
