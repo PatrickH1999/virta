@@ -13,7 +13,7 @@ public:
 
     Prob(size_t ni, size_t nj) : ni_(ni), nj_(nj) {}
 
-    FieldXD& addField(Real value_) {
+    FieldXD& add(Real value_) {
         auto ptr = std::make_unique<FieldXD>(ni_, nj_, value_);
         FieldXD& ref = *ptr;
         fields.push_back(std::move(ptr));

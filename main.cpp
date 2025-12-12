@@ -9,35 +9,35 @@
 
 using DefaultScheme = virta::Central;
 using Real = double;
+using Field = virta::Field2D<Real>;
 
 int main() {
-    virta::Prob<Real, virta::Field2D<Real>> prob(1000, 1000);
-
     constexpr Real PI = 3.14159265358979323846264338327950;
     constexpr int N = 1024;
     constexpr Real dx = (16 * PI) / N;
-    constexpr int max_step = 12500;
+    constexpr int max_step = 125;
     constexpr Real dt = 0.00001;
     constexpr int gcm = 3;
 
     constexpr Real g = 9.81;
     
-    virta::Field2D<Real> h(N, N, 0.0);
-    virta::Field2D<Real> u(N, N, 0.0);
-    virta::Field2D<Real> v(N, N, 0.0);
+    virta::Prob<Real, Field> prob(N, N);
+    Field& h = prob.add(0.0);
+    Field& u = prob.add(0.0);
+    Field& v = prob.add(0.0);
    
-    virta::Field2D<Real> hu = h;
-    virta::Field2D<Real> hv = h;
-    virta::Field2D<Real> huu = h;
-    virta::Field2D<Real> huv = h;
-    virta::Field2D<Real> hvv = h;
+    Field& hu = prob.add(0.0);
+    Field& hv = prob.add(0.0);
+    Field& huu = prob.add(0.0);
+    Field& huv = prob.add(0.0);
+    Field& hvv = prob.add(0.0);
 
-    virta::Field2D<Real> dhu_dx = h;
-    virta::Field2D<Real> dhv_dy = h;
-    virta::Field2D<Real> dhuu_dx = h;
-    virta::Field2D<Real> dhuv_dy = h;
-    virta::Field2D<Real> dhuv_dx = h;
-    virta::Field2D<Real> dhvv_dy = h;
+    Field& dhu_dx = prob.add(0.0);
+    Field& dhv_dy = prob.add(0.0);
+    Field& dhuu_dx = prob.add(0.0);
+    Field& dhuv_dy = prob.add(0.0);
+    Field& dhuv_dx = prob.add(0.0);
+    Field& dhvv_dy = prob.add(0.0);
 
     auto t0 = std::chrono::high_resolution_clock::now();
     virta::parallel_region([&]() {
