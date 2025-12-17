@@ -2,46 +2,48 @@
 #include <cmath>
 #include <iostream>
 
-#include "src/Functions.H"
-#include "src/BC.H"
+#include "src/BCStruct.H"
 #include "src/Field2D.H"
+#include "src/Functions.H"
 #include "src/Prob.H"
 
 using DefaultScheme = virta::Central;
 using Real = double;
 using Field = virta::Field2D<Real>;
 
-using virta::BCTag::Neumann;
-using virta::BCTag::Dirichlet;
+constexpr virta::BCTag Neumann   = virta::BCTag::Neumann;
+constexpr virta::BCTag Dirichlet = virta::BCTag::Dirichlet;
 
 int main() {
     constexpr Real PI = 3.14159265358979323846264338327950;
-    constexpr int N = 1024;
+    constexpr int N = 128;
     constexpr Real dx = (16 * PI) / N;
-    constexpr int max_step = 1250;
-    constexpr Real dt = 0.00005;
+    constexpr int max_step = 100000;
+    constexpr Real dt = 0.00001;
     constexpr int gcm = 3;
 
     constexpr Real g = 9.81;
    
-    virta::BCStruct BC = {Neumann, Neumann, Neumann, Neumann};
     virta::Prob<Real, Field> prob(N, N);
-    Field& h = prob.add(BC, 0.0);
-    Field& u = prob.add(BC, 0.0);
-    Field& v = prob.add(BC, 0.0);
-   
-    Field& hu = prob.add(BC, 0.0);
-    Field& hv = prob.add(BC, 0.0);
-    Field& huu = prob.add(BC, 0.0);
-    Field& huv = prob.add(BC, 0.0);
-    Field& hvv = prob.add(BC, 0.0);
 
-    Field& dhu_dx = prob.add(BC, 0.0);
-    Field& dhv_dy = prob.add(BC, 0.0);
-    Field& dhuu_dx = prob.add(BC, 0.0);
-    Field& dhuv_dy = prob.add(BC, 0.0);
-    Field& dhuv_dx = prob.add(BC, 0.0);
-    Field& dhvv_dy = prob.add(BC, 0.0);
+    virta::BCStruct<Real, 2> BC = {{Neumann, 0.0}, {Neumann, 0.0}, {Neumann, 0.0}, {Neumann, 0.0}};
+    
+    Field& h = prob.add(0.0, BC, gcm);
+    Field& u = prob.add(0.0, BC, gcm);
+    Field& v = prob.add(0.0, BC, gcm);
+   
+    Field& hu = prob.add(0.0, BC, gcm);
+    Field& hv = prob.add(0.0, BC, gcm);
+    Field& huu = prob.add(0.0, BC, gcm);
+    Field& huv = prob.add(0.0, BC, gcm);
+    Field& hvv = prob.add(0.0, BC, gcm);
+
+    Field& dhu_dx = prob.add(0.0, BC, gcm);
+    Field& dhv_dy = prob.add(0.0, BC, gcm);
+    Field& dhuu_dx = prob.add(0.0, BC, gcm);
+    Field& dhuv_dy = prob.add(0.0, BC, gcm);
+    Field& dhuv_dx = prob.add(0.0, BC, gcm);
+    Field& dhvv_dy = prob.add(0.0, BC, gcm);
 
     auto t0 = std::chrono::high_resolution_clock::now();
     virta::parallel_region([&]() {
@@ -63,18 +65,7 @@ int main() {
         // Compute:
         for (int n = 0; n < max_step; n++) {
             // Boundary conditions:
-            virta::setILowNeumann(h, gcm); 
-            virta::setIHighNeumann(h, gcm); 
-            virta::setJLowNeumann(h, gcm); 
-            virta::setJHighNeumann(h, gcm); 
-            virta::setILowNeumann(u, gcm); 
-            virta::setIHighNeumann(u, gcm); 
-            virta::setJLowNeumann(u, gcm); 
-            virta::setJHighNeumann(u, gcm); 
-            virta::setILowNeumann(v, gcm); 
-            virta::setIHighNeumann(v, gcm); 
-            virta::setJLowNeumann(v, gcm); 
-            virta::setJHighNeumann(v, gcm); 
+            prob.setBC();
 
             // Derivatives:
             virta::ddx<DefaultScheme>(hu, dhu_dx, dx, u, gcm);

@@ -78,76 +78,76 @@ public:
 
     inline void setBC() {
         // iLo:
-        if (BC.iLo.type == BCTag::Dirichlet) {
+        if (BC.iLo == BCTag::Dirichlet) {
             this->setILowDirichlet(BC.iLo.value);
-        } else if (BC.iLo.type == BCTag::Neumann) {
+        } else if (BC.iLo == BCTag::Neumann) {
             this->setILowNeumann(gcm);
         }
         // iHi:
-        if (BC.iHi.type == BCTag::Dirichlet) {
+        if (BC.iHi == BCTag::Dirichlet) {
             this->setIHighDirichlet(BC.iHi.value);
-        } else if (BC.iHi.type == BCTag::Neumann) {
+        } else if (BC.iHi == BCTag::Neumann) {
             this->setIHighNeumann(gcm);
         }
         // jLo:
-        if (BC.jLo.type == BCTag::Dirichlet) {
+        if (BC.jLo == BCTag::Dirichlet) {
             this->setJLowDirichlet(BC.jLo.value);
-        } else if (BC.jLo.type == BCTag::Neumann) {
+        } else if (BC.jLo == BCTag::Neumann) {
             this->setJLowNeumann(gcm);
         }
         // jHi:
-        if (BC.jHi.type == BCTag::Dirichlet) {
+        if (BC.jHi == BCTag::Dirichlet) {
             this->setJHighDirichlet(BC.jHi.value);
-        } else if (BC.jHi.type == BCTag::Neumann) {
+        } else if (BC.jHi == BCTag::Neumann) {
             this->setJHighNeumann(gcm);
         }
     }
 
     inline void setILowDirichlet(Real value) {
-        parallel_for(Range<int>(0, gcm), Range<int>(gcm, nj - gcm), [&] (int i, int j) {
-            this->operator()(i, j) = value;
+        parallel_for(Range<int>(0, gcm), Range<int>(gcm, this->nj - gcm), [&] (int i, int j) {
+            this(i, j) = value;
         });
     }
     
     inline void setIHighDirichlet(Real value) {
-        parallel_for(Range<int>(ni - gcm, ni), Range<int>(gcm, nj - gcm), [&] (int i, int j) {
-            this->operator()(i, j) = value;
+        parallel_for(Range<int>(this->ni - gcm, this->ni), Range<int>(gcm, this->nj - gcm), [&] (int i, int j) {
+            this(i, j) = value;
         });
     }
     
     inline void setJLowDirichlet(Real value) {
-        parallel_for(Range<int>(gcm, ni - gcm), Range<int>(0, gcm), [&] (int i, int j) {
-            this->operator()(i, j) = value;
+        parallel_for(Range<int>(gcm, this->ni - gcm), Range<int>(0, gcm), [&] (int i, int j) {
+            this(i, j) = value;
         });
     }
     
     inline void setJHighDirichlet(Real value) {
-        parallel_for(Range<int>(gcm, ni - gcm), Range<int>(nj - gcm, nj), [&] (int i, int j) {
-            this->operator()(i, j) = value;
+        parallel_for(Range<int>(gcm, this->ni - gcm), Range<int>(this->nj - gcm, this->nj), [&] (int i, int j) {
+            this(i, j) = value;
         });
     }
     
     inline void setILowNeumann(int ghost_cell_margin) {
-        parallel_for(Range<int>(0, gcm), Range<int>(gcm, nj - gcm), [&] (int i, int j) {
-            this->operator()(i, j) = this->operator()(gcm, j);
+        parallel_for(Range<int>(0, gcm), Range<int>(gcm, this->nj - gcm), [&] (int i, int j) {
+            this(i, j) = this(gcm, j);
         });
     }
     
     inline void setIHighNeumann(int ghost_cell_margin) {
-        parallel_for(Range<int>(ni - gcm, ni), Range<int>(gcm, nj - gcm), [&] (int i, int j) {
-            this->operator()(i, j) = this->operator()(ni - gcm - 1, j);
+        parallel_for(Range<int>(this->ni - gcm, this->ni), Range<int>(gcm, this->nj - gcm), [&] (int i, int j) {
+            this(i, j) = this(this->ni - gcm - 1, j);
         });
     }
     
     inline void setJLowNeumann(int ghost_cell_margin) {
-        parallel_for(Range<int>(gcm, ni - gcm), Range<int>(0, gcm), [&] (int i, int j) {
-            this->operator()(i, j) = this->operator()(i, gcm);
+        parallel_for(Range<int>(gcm, this->ni - gcm), Range<int>(0, gcm), [&] (int i, int j) {
+            this(i, j) = this(i, gcm);
         });
     }
     
     inline void setJHighNeumann(int ghost_cell_margin) {
-        parallel_for(Range<int>(gcm, ni - gcm), Range<int>(nj - gcm, nj), [&] (int i, int j) {
-            this->operator()(i, j) = this->operator()(i, nj - gcm - 1);
+        parallel_for(Range<int>(gcm, this->ni - gcm), Range<int>(this->nj - gcm, this->nj), [&] (int i, int j) {
+            this(i, j) = this(i, this->nj - gcm - 1);
         });
     }
 
@@ -156,8 +156,8 @@ public:
      */
     void write_binary(const std::string& filename) {
         std::ofstream out(filename, std::ios::binary);
-        out.write(reinterpret_cast<const char*>(&ni), sizeof(ni));
-        out.write(reinterpret_cast<const char*>(&nj), sizeof(nj));
+        out.write(reinterpret_cast<const char*>(&this->ni), sizeof(this->ni));
+        out.write(reinterpret_cast<const char*>(&this->nj), sizeof(this->nj));
         out.write(reinterpret_cast<const char*>(this->data.data()),
                   this->data.size() * sizeof(Real));
     }
