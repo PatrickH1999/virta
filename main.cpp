@@ -11,33 +11,37 @@ using DefaultScheme = virta::Central;
 using Real = double;
 using Field = virta::Field2D<Real>;
 
+using virta::BCTag::Neumann;
+using virta::BCTag::Dirichlet;
+
 int main() {
     constexpr Real PI = 3.14159265358979323846264338327950;
     constexpr int N = 1024;
     constexpr Real dx = (16 * PI) / N;
-    constexpr int max_step = 125;
-    constexpr Real dt = 0.00001;
+    constexpr int max_step = 1250;
+    constexpr Real dt = 0.00005;
     constexpr int gcm = 3;
 
     constexpr Real g = 9.81;
-    
-    virta::Prob<Real, Field> prob(N, N);
-    Field& h = prob.add(0.0);
-    Field& u = prob.add(0.0);
-    Field& v = prob.add(0.0);
    
-    Field& hu = prob.add(0.0);
-    Field& hv = prob.add(0.0);
-    Field& huu = prob.add(0.0);
-    Field& huv = prob.add(0.0);
-    Field& hvv = prob.add(0.0);
+    virta::BCStruct BC = {Neumann, Neumann, Neumann, Neumann};
+    virta::Prob<Real, Field> prob(N, N);
+    Field& h = prob.add(BC, 0.0);
+    Field& u = prob.add(BC, 0.0);
+    Field& v = prob.add(BC, 0.0);
+   
+    Field& hu = prob.add(BC, 0.0);
+    Field& hv = prob.add(BC, 0.0);
+    Field& huu = prob.add(BC, 0.0);
+    Field& huv = prob.add(BC, 0.0);
+    Field& hvv = prob.add(BC, 0.0);
 
-    Field& dhu_dx = prob.add(0.0);
-    Field& dhv_dy = prob.add(0.0);
-    Field& dhuu_dx = prob.add(0.0);
-    Field& dhuv_dy = prob.add(0.0);
-    Field& dhuv_dx = prob.add(0.0);
-    Field& dhvv_dy = prob.add(0.0);
+    Field& dhu_dx = prob.add(BC, 0.0);
+    Field& dhv_dy = prob.add(BC, 0.0);
+    Field& dhuu_dx = prob.add(BC, 0.0);
+    Field& dhuv_dy = prob.add(BC, 0.0);
+    Field& dhuv_dx = prob.add(BC, 0.0);
+    Field& dhvv_dy = prob.add(BC, 0.0);
 
     auto t0 = std::chrono::high_resolution_clock::now();
     virta::parallel_region([&]() {
@@ -59,18 +63,18 @@ int main() {
         // Compute:
         for (int n = 0; n < max_step; n++) {
             // Boundary conditions:
-            virta::BC::setILowNeumann(h, gcm); 
-            virta::BC::setIHighNeumann(h, gcm); 
-            virta::BC::setJLowNeumann(h, gcm); 
-            virta::BC::setJHighNeumann(h, gcm); 
-            virta::BC::setILowNeumann(u, gcm); 
-            virta::BC::setIHighNeumann(u, gcm); 
-            virta::BC::setJLowNeumann(u, gcm); 
-            virta::BC::setJHighNeumann(u, gcm); 
-            virta::BC::setILowNeumann(v, gcm); 
-            virta::BC::setIHighNeumann(v, gcm); 
-            virta::BC::setJLowNeumann(v, gcm); 
-            virta::BC::setJHighNeumann(v, gcm); 
+            virta::setILowNeumann(h, gcm); 
+            virta::setIHighNeumann(h, gcm); 
+            virta::setJLowNeumann(h, gcm); 
+            virta::setJHighNeumann(h, gcm); 
+            virta::setILowNeumann(u, gcm); 
+            virta::setIHighNeumann(u, gcm); 
+            virta::setJLowNeumann(u, gcm); 
+            virta::setJHighNeumann(u, gcm); 
+            virta::setILowNeumann(v, gcm); 
+            virta::setIHighNeumann(v, gcm); 
+            virta::setJLowNeumann(v, gcm); 
+            virta::setJHighNeumann(v, gcm); 
 
             // Derivatives:
             virta::ddx<DefaultScheme>(hu, dhu_dx, dx, u, gcm);

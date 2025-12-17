@@ -4,6 +4,8 @@
 #include <memory>
 #include <vector>
 
+#include "BC.H"
+
 namespace virta {
 
 template<typename Real, typename FieldXD>
@@ -13,7 +15,7 @@ public:
 
     Prob(size_t ni, size_t nj) : ni_(ni), nj_(nj) {}
 
-    FieldXD& add(Real value_) {
+    FieldXD& add(virta::BCStruct<FieldXD> BCStruct, Real value_) {
         auto ptr = std::make_unique<FieldXD>(ni_, nj_, value_);
         FieldXD& ref = *ptr;
         fields.push_back(std::move(ptr));

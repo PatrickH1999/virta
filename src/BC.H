@@ -1,10 +1,35 @@
 #ifndef BC_H
 #define BC_H
 
+#include <string>
+
+#include "Field1D.H"
 #include "Field2D.H"
 #include "Range.H"
 
-namespace virta::BC {
+namespace virta {
+
+enum class BCTag {
+    Dirichlet,
+    Neumann
+};
+
+template <typename FieldXD>
+struct BCStruct;
+
+template <typename Real>
+struct BCStruct<virta::Field1D<Real>> {
+    BCTag iLo;
+    BCTag iHi;
+};
+
+template <typename Real>
+struct BCStruct<virta::Field2D<Real>> {
+    BCTag iLo;
+    BCTag iHi;
+    BCTag jLo;
+    BCTag jHi;
+};
 
 template <typename Real>
 inline void setILowDirichlet(Field2D<Real>& field, Real value, int ghost_cell_margin = 0) {
