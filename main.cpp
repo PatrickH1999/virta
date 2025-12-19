@@ -5,14 +5,15 @@
 #include "src/BCStruct.H"
 #include "src/Field2D.H"
 #include "src/Functions.H"
+#include "src/Grad.H"
 #include "src/Prob.H"
 
-using DefaultScheme = virta::Central;
 using Real = double;
 using Field = virta::Field2D<Real>;
 
 constexpr virta::BCTag Neumann   = virta::BCTag::Neumann;
 constexpr virta::BCTag Dirichlet = virta::BCTag::Dirichlet;
+constexpr virta::GradScheme DefaultGradScheme = virta::GradScheme::Central6;
 
 int main() {
     constexpr Real PI = 3.14159265358979323846264338327950;
@@ -68,12 +69,12 @@ int main() {
             prob.setBC();
 
             // Derivatives:
-            virta::ddx<DefaultScheme>(hu, dhu_dx, dx, u, gcm);
-            virta::ddy<DefaultScheme>(hv, dhv_dy, dx, v, gcm);
-            virta::ddx<DefaultScheme>(huu, dhuu_dx, dx, u, gcm);
-            virta::ddy<DefaultScheme>(huv, dhuv_dy, dx, v, gcm);
-            virta::ddx<DefaultScheme>(huv, dhuv_dx, dx, u, gcm);
-            virta::ddy<DefaultScheme>(hvv, dhvv_dy, dx, v, gcm);
+            virta::ddx<DefaultGradScheme>(hu, dhu_dx, dx, u, gcm);
+            virta::ddy<DefaultGradScheme>(hv, dhv_dy, dx, v, gcm);
+            virta::ddx<DefaultGradScheme>(huu, dhuu_dx, dx, u, gcm);
+            virta::ddy<DefaultGradScheme>(huv, dhuv_dy, dx, v, gcm);
+            virta::ddx<DefaultGradScheme>(huv, dhuv_dx, dx, u, gcm);
+            virta::ddy<DefaultGradScheme>(hvv, dhvv_dy, dx, v, gcm);
 
             // Time advance:
             virta::parallel_for(virta::Range<int>(0, N), virta::Range<int>(0, N), [&](int i, int j) {
