@@ -18,8 +18,8 @@ public:
 
     Prob(size_t ni, size_t nj) : ni_(ni), nj_(nj) {}
 
-    FieldXD& add(Real value, virta::BCStruct<Real, 2> BC, int gcm) {
-        auto ptr = std::make_unique<FieldXD>(ni_, nj_, value, BC, gcm);
+    FieldXD& add(Real value, virta::BCStruct<Real, 2> BC, int gcm, bool stag_i, bool stag_j) {
+        auto ptr = std::make_unique<FieldXD>(ni_, nj_, value, BC, gcm, stag_i, stag_j);
         FieldXD& ref = *ptr;
         fields.push_back(std::move(ptr));
         return ref;

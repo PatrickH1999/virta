@@ -18,7 +18,7 @@ int main() {
     constexpr Real PI = 3.14159265358979323846264338327950;
     constexpr int N = 128;
     constexpr Real dx = (16 * PI) / N;
-    constexpr int max_step = 100000;
+    constexpr int max_step = 5000;
     constexpr Real dt = 0.00001;
     constexpr int gcm = 3;
 
@@ -28,22 +28,22 @@ int main() {
 
     virta::BCStruct<Real, 2> BC = {{Neumann, 0.0}, {Neumann, 0.0}, {Neumann, 0.0}, {Neumann, 0.0}};
     
-    Field& h = prob.add(0.0, BC, gcm);
-    Field& u = prob.add(0.0, BC, gcm);
-    Field& v = prob.add(0.0, BC, gcm);
+    Field& h = prob.add(0.0, BC, gcm, false, false);
+    Field& u = prob.add(0.0, BC, gcm, false, false);
+    Field& v = prob.add(0.0, BC, gcm, false, false);
    
-    Field& hu = prob.add(0.0, BC, gcm);
-    Field& hv = prob.add(0.0, BC, gcm);
-    Field& huu = prob.add(0.0, BC, gcm);
-    Field& huv = prob.add(0.0, BC, gcm);
-    Field& hvv = prob.add(0.0, BC, gcm);
+    Field& hu = prob.add(0.0, BC, gcm, false, false);
+    Field& hv = prob.add(0.0, BC, gcm, false, false);
+    Field& huu = prob.add(0.0, BC, gcm, false, false);
+    Field& huv = prob.add(0.0, BC, gcm, false, false);
+    Field& hvv = prob.add(0.0, BC, gcm, false, false);
 
-    Field& dhu_dx = prob.add(0.0, BC, gcm);
-    Field& dhv_dy = prob.add(0.0, BC, gcm);
-    Field& dhuu_dx = prob.add(0.0, BC, gcm);
-    Field& dhuv_dy = prob.add(0.0, BC, gcm);
-    Field& dhuv_dx = prob.add(0.0, BC, gcm);
-    Field& dhvv_dy = prob.add(0.0, BC, gcm);
+    Field& dhu_dx = prob.add(0.0, BC, gcm, false, false);
+    Field& dhv_dy = prob.add(0.0, BC, gcm, false, false);
+    Field& dhuu_dx = prob.add(0.0, BC, gcm, false, false);
+    Field& dhuv_dy = prob.add(0.0, BC, gcm, false, false);
+    Field& dhuv_dx = prob.add(0.0, BC, gcm, false, false);
+    Field& dhvv_dy = prob.add(0.0, BC, gcm, false, false);
 
     auto t0 = std::chrono::high_resolution_clock::now();
     virta::parallel_region([&]() {

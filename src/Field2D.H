@@ -1,6 +1,7 @@
 #ifndef FIELD2D_H
 #define FIELD2D_H
 
+#include <cassert>
 #include <cstddef>
 #include <fstream>
 #include <string>
@@ -22,31 +23,75 @@ template<typename Real>
 class Field2D : public Field<Real, Field2D<Real>> {
 
 public:
-    /// Number of points in x-direction.
-    const size_t ni;
-
-    /// Number of points in y-direction.
-    const size_t nj;
-
-    const BCStruct<Real, 2> BC;
-
-    /// Ghost cell margin.
-    const int gcm;
-    
     /// Dimensionality of the field (2D).
     static constexpr int ndim = 2;
+    
+    /// Number of points in i-direction.
+    size_t ni;
+
+    /// Number of points in y-direction.
+    size_t nj;
+
+    BCStruct<Real, 2> BC;
+
+    /// Ghost cell margin.
+    int gcm;
+
+    /// Staggering in i, j direction.
+    bool stag_i;
+    bool stag_j;
 
     /**
      * @brief Construct a 2D field of size ni_ × nj_ initialized to zero.
      */
-    Field2D(const size_t ni_, const size_t nj_, BCStruct<Real, 2> BC_, int gcm_) noexcept
-        : Field<Real, Field2D<Real>>(ni_ * nj_), ni(ni_), nj(nj_), BC(BC_), gcm(gcm_) {}
+    Field2D(size_t ni_, size_t nj_, BCStruct<Real, 2> BC_, int gcm_, bool stag_i_, bool stag_j_) noexcept : Field<Real, Field2D<Real>>(ni_times_nj(ni_, nj_, stag_i_, stag_j_)) {
+
+        BC = BC_;
+        stag_i = stag_i_;
+        stag_j = stag_j_;
+        assert(!(stag_i && stag_j)); // make sure that stag_i, stag_j are not both true
+        if (stag_i) {
+            ni = ni_ + 1;
+            nj = nj_;
+        } else if (stag_j) {
+            ni = ni_;
+            nj = nj_ + 1;
+        } else {
+            ni = ni_;
+            nj = nj_;
+        }
+    }
 
     /**
      * @brief Construct a 2D field of size ni_ × nj_ initialized to @p value_.
      */
-    Field2D(const size_t ni_, const size_t nj_, Real value_, BCStruct<Real, 2> BC_, int gcm_) noexcept
-        : Field<Real, Field2D<Real>>(ni_ * nj_, value_), ni(ni_), nj(nj_), BC(BC_), gcm(gcm_) {}
+    Field2D(size_t ni_, size_t nj_, Real value_, BCStruct<Real, 2> BC_, int gcm_, bool stag_i_, bool stag_j_) noexcept : Field<Real, Field2D<Real>>(ni_times_nj(ni_, nj_, stag_i_, stag_j_), value_) {
+        BC = BC_;
+        stag_i = stag_i_;
+        stag_j = stag_j_;
+        assert(!(stag_i && stag_j)); // make sure that stag_i, stag_j are not both true
+        if (stag_i) {
+            ni = ni_ + 1;
+            nj = nj_;
+        } else if (stag_j) {
+            ni = ni_;
+            nj = nj_ + 1;
+        } else {
+            ni = ni_;
+            nj = nj_;
+        } 
+    }
+
+    size_t ni_times_nj(size_t ni_, size_t nj_, bool stag_i_, bool stag_j_) {
+        assert(!(stag_i_ && stag_j_));
+        if (stag_i_) {
+            return ((ni_ + 1) * nj_);
+        } else if (stag_j_) {
+            return (ni_ * (nj_ + 1));
+        } else {
+            return (ni_ * nj_);
+        }
+    }
 
     /**
      * @brief Access flat index @p i (mutable).

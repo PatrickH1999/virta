@@ -1,6 +1,7 @@
 ### Planned:
-- Periodic boundaries
 - Staggering
+- Implicit time stepping
+- Periodic boundaries
 - Solid cells (rigid body in flow)
 - GPU capability
 - Shallow water also in 1D
