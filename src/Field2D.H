@@ -1,7 +1,6 @@
 #ifndef FIELD2D_H
 #define FIELD2D_H
 
-#include <cassert>
 #include <cstddef>
 #include <fstream>
 #include <string>
@@ -19,8 +18,8 @@ namespace virta {
  *
  * @tparam Real Floating-point data type.
  */
-template<typename Real>
-class Field2D : public Field<Real, Field2D<Real>> {
+template<typename Real, int stag>
+class Field2D : public Field<Real, Field2D<Real, stag>> {
 
 public:
     /// Dimensionality of the field (2D).
@@ -37,26 +36,18 @@ public:
     /// Ghost cell margin.
     int gcm;
 
-    /// Staggering in i, j direction.
-    bool stag_i;
-    bool stag_j;
-
     /**
      * @brief Construct a 2D field of size ni_ × nj_ initialized to zero.
      */
-    Field2D(size_t ni_, size_t nj_, BCStruct<Real, 2> BC_, int gcm_, bool stag_i_, bool stag_j_) noexcept : Field<Real, Field2D<Real>>(ni_times_nj(ni_, nj_, stag_i_, stag_j_)) {
-
+    Field2D(size_t ni_, size_t nj_, BCStruct<Real, 2> BC_, int gcm_) noexcept : BC(BC_), gcm(gcm_), Field<Real, Field2D<Real, stag>>(ni_times_nj(ni_, nj_)) {
         BC = BC_;
-        stag_i = stag_i_;
-        stag_j = stag_j_;
-        assert(!(stag_i && stag_j)); // make sure that stag_i, stag_j are not both true
-        if (stag_i) {
+        if (stag == 0) {
             ni = ni_ + 1;
             nj = nj_;
-        } else if (stag_j) {
+        } else if (stag == 1) {
             ni = ni_;
             nj = nj_ + 1;
-        } else {
+        } else if (stag == -1) {
             ni = ni_;
             nj = nj_;
         }
@@ -65,30 +56,25 @@ public:
     /**
      * @brief Construct a 2D field of size ni_ × nj_ initialized to @p value_.
      */
-    Field2D(size_t ni_, size_t nj_, Real value_, BCStruct<Real, 2> BC_, int gcm_, bool stag_i_, bool stag_j_) noexcept : Field<Real, Field2D<Real>>(ni_times_nj(ni_, nj_, stag_i_, stag_j_), value_) {
-        BC = BC_;
-        stag_i = stag_i_;
-        stag_j = stag_j_;
-        assert(!(stag_i && stag_j)); // make sure that stag_i, stag_j are not both true
-        if (stag_i) {
+    Field2D(size_t ni_, size_t nj_, Real value_, BCStruct<Real, 2> BC_, int gcm_) noexcept : BC(BC_), gcm(gcm_), Field<Real, Field2D<Real, stag>>(ni_times_nj(ni_, nj_), value_) {
+        if (stag == 0) {
             ni = ni_ + 1;
             nj = nj_;
-        } else if (stag_j) {
+        } else if (stag == 1) {
             ni = ni_;
             nj = nj_ + 1;
-        } else {
+        } else if (stag == -1) {
             ni = ni_;
             nj = nj_;
         } 
     }
 
-    size_t ni_times_nj(size_t ni_, size_t nj_, bool stag_i_, bool stag_j_) {
-        assert(!(stag_i_ && stag_j_));
-        if (stag_i_) {
+    size_t ni_times_nj(size_t ni_, size_t nj_) {
+        if (stag == 0) {
             return ((ni_ + 1) * nj_);
-        } else if (stag_j_) {
+        } else if (stag == 1) {
             return (ni_ * (nj_ + 1));
-        } else {
+        } else if (stag == -1) {
             return (ni_ * nj_);
         }
     }
