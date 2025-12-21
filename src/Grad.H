@@ -28,8 +28,8 @@ enum class GradScheme {
     Upwind
 };
 
-template <GradScheme Scheme, typename Real>
-inline void ddx(const Field2D<Real, -1>& base, Field2D<Real, -1>& deriv, Real dx, const Field2D<Real, -1>& u, int ghost_cell_margin = 0)
+template <GradScheme Scheme, typename Field2D, typename Real>
+inline void ddx(const Field2D& base, Field2D& deriv, Real dx, const Field2D& u, int ghost_cell_margin = 0)
 {
     constexpr bool central = (Scheme == GradScheme::Central);
     constexpr bool central4 = (Scheme == GradScheme::Central4);
@@ -58,8 +58,8 @@ inline void ddx(const Field2D<Real, -1>& base, Field2D<Real, -1>& deriv, Real dx
     });
 }
 
-template <GradScheme Scheme, typename Real>
-inline void ddy(const Field2D<Real, -1>& base, Field2D<Real, -1>& deriv, Real dy, const Field2D<Real, -1>& v, int ghost_cell_margin = 0)
+template <GradScheme Scheme, typename Field2D, typename Real>
+inline void ddy(const Field2D& base, Field2D& deriv, Real dy, const Field2D& v, int ghost_cell_margin = 0)
 {
     constexpr bool central = (Scheme == GradScheme::Central);
     constexpr bool central4 = (Scheme == GradScheme::Central4);

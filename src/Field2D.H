@@ -18,8 +18,8 @@ namespace virta {
  *
  * @tparam Real Floating-point data type.
  */
-template<typename Real, int stag>
-class Field2D : public Field<Real, Field2D<Real, stag>> {
+template<typename Real>
+class Field2D : public Field<Real, Field2D<Real>> {
 
 public:
     /// Dimensionality of the field (2D).
@@ -39,45 +39,12 @@ public:
     /**
      * @brief Construct a 2D field of size ni_ × nj_ initialized to zero.
      */
-    Field2D(size_t ni_, size_t nj_, BCStruct<Real, 2> BC_, int gcm_) noexcept : BC(BC_), gcm(gcm_), Field<Real, Field2D<Real, stag>>(ni_times_nj(ni_, nj_)) {
-        BC = BC_;
-        if (stag == 0) {
-            ni = ni_ + 1;
-            nj = nj_;
-        } else if (stag == 1) {
-            ni = ni_;
-            nj = nj_ + 1;
-        } else if (stag == -1) {
-            ni = ni_;
-            nj = nj_;
-        }
-    }
+    Field2D(size_t ni_, size_t nj_, BCStruct<Real, 2> BC_, int gcm_) noexcept : ni(ni_), nj(nj_), BC(BC_), gcm(gcm_), Field<Real, Field2D<Real>>(ni_ * nj_) {}
 
     /**
      * @brief Construct a 2D field of size ni_ × nj_ initialized to @p value_.
      */
-    Field2D(size_t ni_, size_t nj_, Real value_, BCStruct<Real, 2> BC_, int gcm_) noexcept : BC(BC_), gcm(gcm_), Field<Real, Field2D<Real, stag>>(ni_times_nj(ni_, nj_), value_) {
-        if (stag == 0) {
-            ni = ni_ + 1;
-            nj = nj_;
-        } else if (stag == 1) {
-            ni = ni_;
-            nj = nj_ + 1;
-        } else if (stag == -1) {
-            ni = ni_;
-            nj = nj_;
-        } 
-    }
-
-    size_t ni_times_nj(size_t ni_, size_t nj_) {
-        if (stag == 0) {
-            return ((ni_ + 1) * nj_);
-        } else if (stag == 1) {
-            return (ni_ * (nj_ + 1));
-        } else if (stag == -1) {
-            return (ni_ * nj_);
-        }
-    }
+    Field2D(size_t ni_, size_t nj_, Real value_, BCStruct<Real, 2> BC_, int gcm_) noexcept : ni(ni_), nj(nj_), BC(BC_), gcm(gcm_), Field<Real, Field2D<Real>>(ni_ * nj_, value_) {}
 
     /**
      * @brief Access flat index @p i (mutable).

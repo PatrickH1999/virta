@@ -8,12 +8,15 @@
 #include "src/Grad.H"
 #include "src/Prob.H"
 
-using Real = double;
-using Field = virta::Field2D<Real, -1>;
-
+constexpr virta::Staggering noStag = virta::Staggering::noStag;
+constexpr virta::Staggering iStag = virta::Staggering::iStag;
+constexpr virta::Staggering jStag = virta::Staggering::jStag;
 constexpr virta::BCTag Neumann   = virta::BCTag::Neumann;
 constexpr virta::BCTag Dirichlet = virta::BCTag::Dirichlet;
 constexpr virta::GradScheme DefaultGradScheme = virta::GradScheme::Central6;
+
+using Real = double;
+using Field = virta::Field2D<Real>;
 
 int main() {
     constexpr Real PI = 3.14159265358979323846264338327950;
@@ -29,22 +32,22 @@ int main() {
 
     virta::BCStruct<Real, 2> BC = {{Neumann, 0.0}, {Neumann, 0.0}, {Neumann, 0.0}, {Neumann, 0.0}};
     
-    Field& h = prob.add<-1>(0.0, BC, gcm);
-    Field& u = prob.add<-1>(0.0, BC, gcm);
-    Field& v = prob.add<-1>(0.0, BC, gcm);
+    Field& h = prob.add(0.0, BC, gcm);
+    Field& u = prob.add(0.0, BC, gcm);
+    Field& v = prob.add(0.0, BC, gcm);
    
-    Field& hu = prob.add<-1>(0.0, BC, gcm);
-    Field& hv = prob.add<-1>(0.0, BC, gcm);
-    Field& huu = prob.add<-1>(0.0, BC, gcm);
-    Field& huv = prob.add<-1>(0.0, BC, gcm);
-    Field& hvv = prob.add<-1>(0.0, BC, gcm);
+    Field& hu = prob.add(0.0, BC, gcm);
+    Field& hv = prob.add(0.0, BC, gcm);
+    Field& huu = prob.add(0.0, BC, gcm);
+    Field& huv = prob.add(0.0, BC, gcm);
+    Field& hvv = prob.add(0.0, BC, gcm);
 
-    Field& dhu_dx = prob.add<-1>(0.0, BC, gcm);
-    Field& dhv_dy = prob.add<-1>(0.0, BC, gcm);
-    Field& dhuu_dx = prob.add<-1>(0.0, BC, gcm);
-    Field& dhuv_dy = prob.add<-1>(0.0, BC, gcm);
-    Field& dhuv_dx = prob.add<-1>(0.0, BC, gcm);
-    Field& dhvv_dy = prob.add<-1>(0.0, BC, gcm);
+    Field& dhu_dx = prob.add(0.0, BC, gcm);
+    Field& dhv_dy = prob.add(0.0, BC, gcm);
+    Field& dhuu_dx = prob.add(0.0, BC, gcm);
+    Field& dhuv_dy = prob.add(0.0, BC, gcm);
+    Field& dhuv_dx = prob.add(0.0, BC, gcm);
+    Field& dhvv_dy = prob.add(0.0, BC, gcm);
 
     auto t0 = std::chrono::high_resolution_clock::now();
     virta::parallel_region([&]() {

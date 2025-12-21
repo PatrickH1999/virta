@@ -5,8 +5,15 @@
 #include <vector>
 
 #include "BCStruct.H"
+#include "Field2D.H"
 
 namespace virta {
+
+enum class Staggering {
+    noStag,
+    iStag,
+    jStag
+};
 
 template<typename Real, typename FieldXD>
 class Prob {
@@ -18,8 +25,15 @@ public:
 
     Prob(size_t ni, size_t nj) : ni_(ni), nj_(nj) {}
 
-    template<int stag>
+    template<Staggering stag = Staggering::noStag>
     FieldXD& add(Real value, virta::BCStruct<Real, 2> BC, int gcm) {
+        int ni = ni_;
+        int nj = nj_;
+        if constexpr (stag == Staggering::iStag) {
+            ni++;
+        } else if constexpr (stag == Staggering::jStag) {
+            nj++;
+        }
         auto ptr = std::make_unique<FieldXD>(ni_, nj_, value, BC, gcm);
         FieldXD& ref = *ptr;
         fields.push_back(std::move(ptr));
