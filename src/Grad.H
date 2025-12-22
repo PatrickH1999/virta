@@ -6,9 +6,9 @@
     #include <omp.h>
 #endif
 
-#include "Field.H"
 #include "Field2D.H"
 #include "Range.H"
+#include "Prob.H"
 
 namespace virta {
 
@@ -28,67 +28,48 @@ enum class GradScheme {
     Upwind
 };
 
-template <GradScheme Scheme, typename Field2D, typename Real>
-inline void ddx(const Field2D& base, Field2D& deriv, Real dx, const Field2D& u, int ghost_cell_margin = 0)
+template <int dim, GradScheme scheme, Staggering stagOrig = Staggering::noStag, Staggering stagDest = Staggering::noStag, typename Field2D, typename Real>
+inline void grad(const Field2D& base, Field2D& deriv, Real dx, const Field2D& u, int ghost_cell_margin = 0)
 {
-    constexpr bool central = (Scheme == GradScheme::Central);
-    constexpr bool central4 = (Scheme == GradScheme::Central4);
-    constexpr bool central6 = (Scheme == GradScheme::Central6);
-    constexpr bool upwind = (Scheme == GradScheme::Upwind);
-
+    constexpr bool central = (scheme == GradScheme::Central);
+    constexpr bool central4 = (scheme == GradScheme::Central4);
+    constexpr bool central6 = (scheme == GradScheme::Central6);
+    constexpr bool upwind = (scheme == GradScheme::Upwind);
+    constexpr bool stagEq = (stagOrig == stagDest);
+    constexpr int iFac = (dim == 0) ? 1 : 0;
+    constexpr int jFac = (dim == 1) ? 1 : 0;
+ 
     auto& gcm = ghost_cell_margin;
     parallel_for(Range<int>(gcm, base.ni - gcm), Range<int>(gcm, base.nj - gcm), [&] (int i, int j) {
-        if constexpr (central) {
-            deriv(i, j) = (base(i + 1, j) - base(i - 1, j)) / (2 * dx);
-        } else if constexpr (central4) {
-            deriv(i, j) = (-base(i + 2, j) + 8 * base(i + 1, j) - 8 * base(i - 1, j) + base(i - 2, j)) / (12 * dx);
-        } else if constexpr (central6) {
-            deriv(i, j) = (-base(i + 3, j) + 9 * base(i + 2, j) - 45 * base(i + 1, j) + 45 * base(i - 1, j) - 9 * base(i - 2, j) + base(i - 3, j)) / (60 * dx);
-        } else if constexpr (upwind) {
+        if constexpr (central && stagEq) {
+            deriv(i, j) = (base(i + iFac, j + jFac) - base(i - 1*iFac, j - 1*jFac)) / (2 * dx);
+        } else if constexpr (central4 && stagEq) {
+            deriv(i, j) = (-base(i + 2*iFac, j + 2*jFac) + 8 * base(i + iFac, j + jFac) - 8 * base(i - 1*iFac, j - 1*jFac) + base(i - 2*iFac, j - 2*jFac)) / (12 * dx);
+        } else if constexpr (central6 && stagEq) {
+            deriv(i, j) = (-base(i + 3*iFac, j + 3*jFac) + 9 * base(i + 2*iFac, j + 2*jFac) - 45 * base(i + iFac, j + jFac) + 45 * base(i - 1*iFac, j - 1*jFac) - 9 * base(i - 2*iFac, j - 2*jFac) + base(i - 3*iFac, j - 3*jFac)) / (60 * dx);
+        } else if constexpr (upwind && stagEq) {
             if (u(i, j) > 0) {
-                deriv(i, j) = (base(i, j) - base(i - 1, j)) / dx;
+                deriv(i, j) = (base(i, j) - base(i - 1*iFac, j - 1*jFac)) / dx;
             } else if (u(i, j) < 0) {
-                deriv(i, j) = (base(i + 1, j) - base(i, j)) / dx;
+                deriv(i, j) = (base(i + iFac, j + jFac) - base(i, j)) / dx;
             } else {
-                deriv(i, j) = (base(i + 1, j) - base(i - 1, j)) / (2 * dx);
+                deriv(i, j) = (base(i + iFac, j + jFac) - base(i - 1*iFac, j - 1*jFac)) / (2 * dx);
             }
         } else {
-            static_assert((Scheme != Scheme), "Unknown finite-difference scheme in ddx.");
+            static_assert((scheme != scheme), "Unknown finite-difference scheme in ddx.");
         }
     });
 }
 
-template <GradScheme Scheme, typename Field2D, typename Real>
-inline void ddy(const Field2D& base, Field2D& deriv, Real dy, const Field2D& v, int ghost_cell_margin = 0)
-{
-    constexpr bool central = (Scheme == GradScheme::Central);
-    constexpr bool central4 = (Scheme == GradScheme::Central4);
-    constexpr bool central6 = (Scheme == GradScheme::Central6);
-    constexpr bool upwind = (Scheme == GradScheme::Upwind);
-
-    auto& gcm = ghost_cell_margin;
-    parallel_for(Range<int>(gcm, base.ni - gcm), Range<int>(gcm, base.nj - gcm), [&] (int i, int j) {
-        if constexpr (central) {
-            deriv(i, j) = (base(i, j + 1) - base(i, j - 1)) / (2 * dy);
-        } else if constexpr (central4) {
-            deriv(i, j) = (-base(i, j + 2) + 8 * base(i, j + 1) - 8 * base(i, j - 1) + base(i, j - 2)) / (12 * dy);
-        } else if constexpr (central6) {
-            deriv(i, j) = (-base(i, j + 3) + 9 * base(i, j + 2) - 45 * base(i, j + 1) + 45 * base(i, j - 1) - 9 * base(i, j - 2) + base(i, j - 3)) / (60 * dy);
-        } else if constexpr (upwind) {
-            if (v(i, j) > 0) {
-                deriv(i, j) = (base(i, j) - base(i, j - 1)) / dy;
-            } else if (v(i, j) < 0) {
-                deriv(i, j) = (base(i, j + 1) - base(i, j)) / dy;
-            } else {
-                deriv(i, j) = (base(i, j + 1) - base(i, j - 1)) / (2 * dy);
-            }
-        } else {
-            static_assert((Scheme != Scheme), "Unknown finite-difference scheme in ddy.");
-        }
-    });
+template <GradScheme scheme, Staggering stagOrig = Staggering::noStag, Staggering stagDest = Staggering::noStag, typename Field2D, typename Real>
+inline void ddx(const Field2D& base, Field2D& deriv, Real dx, const Field2D& u, int ghost_cell_margin = 0) {
+    grad<0, scheme, stagOrig, stagDest>(base, deriv, dx, u, ghost_cell_margin);
 }
 
-/** @} */ // end of Grad
+template <GradScheme scheme, Staggering stagOrig = Staggering::noStag, Staggering stagDest = Staggering::noStag, typename Field2D, typename Real>
+inline void ddy(const Field2D& base, Field2D& deriv, Real dx, const Field2D& u, int ghost_cell_margin = 0) {
+    grad<1, scheme, stagOrig, stagDest>(base, deriv, dx, u, ghost_cell_margin);
+}
 
 } // namespace virta
 

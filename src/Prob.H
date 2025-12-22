@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "BCStruct.H"
-#include "Field2D.H"
 
 namespace virta {
 
