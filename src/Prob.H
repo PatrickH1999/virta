@@ -33,7 +33,7 @@ public:
         } else if constexpr (stag == Staggering::jStag) {
             nj++;
         }
-        auto ptr = std::make_unique<FieldXD>(ni_, nj_, value, BC, gcm);
+        auto ptr = std::make_unique<FieldXD>(ni, nj, value, BC, gcm);
         FieldXD& ref = *ptr;
         fields.push_back(std::move(ptr));
         return ref;
