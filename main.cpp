@@ -22,6 +22,8 @@ using Field = virta::Field2D<Real>;
 int main() {
     constexpr Real PI = 3.14159265358979323846264338327950;
     constexpr int N = 128;
+    constexpr int N_iStag = (stag) ? N + 1 : N;
+    constexpr int N_jStag = (stag) ? N + 1 : N;
     constexpr Real dx = (16 * PI) / N;
     constexpr int max_step = 50000;
     constexpr Real dt = 0.000001;
@@ -85,10 +87,10 @@ int main() {
             virta::ddy<DefaultGradScheme, hStag, vStag>(hvv, dhvv_dy, dx, v, gcm);
 
             // Time advance:
-            virta::parallel_for(virta::Range<int>(0, N + 1), virta::Range<int>(0, N), [&](int i, int j) {
+            virta::parallel_for(virta::Range<int>(0, N_iStag), virta::Range<int>(0, N), [&](int i, int j) {
                 hu(i, j) -= dt * (dhuu_dx(i, j) + dhuv_dy(i, j));   // Momentum eq. (x)
             });
-            virta::parallel_for(virta::Range<int>(0, N), virta::Range<int>(0, N + 1), [&](int i, int j) {
+            virta::parallel_for(virta::Range<int>(0, N), virta::Range<int>(0, N_jStag), [&](int i, int j) {
                 hv(i, j) -= dt * (dhvu_dx(i, j) + dhvv_dy(i, j));   // Momentum eq. (y)
             });    
             virta::interpolate<uStag>(hu, hu_interp);
