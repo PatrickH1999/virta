@@ -31,20 +31,24 @@ public:
     /// Number of points in y-direction.
     size_t nj;
 
+    /// Boundary conditions.
     BCStruct<Real, 2> BC;
 
     /// Ghost cell margin.
     int gcm;
 
-    /**
-     * @brief Construct a 2D field of size ni_ × nj_ initialized to zero.
-     */
-    Field2D(size_t ni_, size_t nj_, BCStruct<Real, 2> BC_, int gcm_) noexcept : ni(ni_), nj(nj_), BC(BC_), gcm(gcm_), Field<Real, Field2D<Real>>(ni_ * nj_) {}
+    /// Staggering.
+    int stag;
 
     /**
      * @brief Construct a 2D field of size ni_ × nj_ initialized to @p value_.
      */
-    Field2D(size_t ni_, size_t nj_, Real value_, BCStruct<Real, 2> BC_, int gcm_) noexcept : ni(ni_), nj(nj_), BC(BC_), gcm(gcm_), Field<Real, Field2D<Real>>(ni_ * nj_, value_) {}
+    Field2D(size_t ni_, size_t nj_, Real value_, BCStruct<Real, 2> BC_, int gcm_, int stag_) noexcept : ni(ni_), nj(nj_), BC(BC_), gcm(gcm_), Field<Real, Field2D<Real>>(ni_ * nj_, value_), stag(stag_) {}
+
+    /**
+     * @brief Construct a 2D field of size ni_ × nj_ initialized to @p value_, but with stag set to default value of -1 (no staggering).
+     */
+    Field2D(size_t ni_, size_t nj_, Real value_, BCStruct<Real, 2> BC_, int gcm_) noexcept : Field2D(ni_, nj_, value_, BC_, gcm_, -1) {}
 
     /**
      * @brief Access flat index @p i (mutable).

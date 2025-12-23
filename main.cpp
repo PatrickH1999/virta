@@ -9,9 +9,9 @@
 #include "src/Prob.H"
 
 constexpr bool stag = true;
-constexpr virta::Staggering hStag = virta::Staggering::noStag;
-constexpr virta::Staggering uStag = (stag) ? virta::Staggering::iStag : virta::Staggering::noStag;
-constexpr virta::Staggering vStag = (stag) ? virta::Staggering::jStag : virta::Staggering::noStag;
+constexpr int hStag = -1;
+constexpr int uStag = (stag) ? 0 : -1;
+constexpr int vStag = (stag) ? 1 : -1;
 constexpr virta::BCTag Neumann   = virta::BCTag::Neumann;
 constexpr virta::BCTag Dirichlet = virta::BCTag::Dirichlet;
 constexpr virta::GradScheme DefaultGradScheme = virta::GradScheme::Central;
@@ -25,8 +25,8 @@ int main() {
     constexpr int N_iStag = (stag) ? N + 1 : N;
     constexpr int N_jStag = (stag) ? N + 1 : N;
     constexpr Real dx = (16 * PI) / N;
-    constexpr int max_step = 50000;
-    constexpr Real dt = 0.000001;
+    constexpr int max_step = 100000;
+    constexpr Real dt = 0.00001;
     constexpr int gcm = 3;
 
     constexpr Real g = 9.81;
@@ -35,25 +35,25 @@ int main() {
 
     virta::BCStruct<Real, 2> BC = {{Neumann, 0.0}, {Neumann, 0.0}, {Neumann, 0.0}, {Neumann, 0.0}};
     
-    Field& h = prob.add<hStag>(0.0, BC, gcm);
-    Field& u = prob.add<hStag>(0.0, BC, gcm);
-    Field& v = prob.add<hStag>(0.0, BC, gcm);
+    Field& h = prob.add(0.0, BC, gcm, hStag);
+    Field& u = prob.add(0.0, BC, gcm, hStag);
+    Field& v = prob.add(0.0, BC, gcm, hStag);
    
-    Field& hu = prob.add<uStag>(0.0, BC, gcm);
-    Field& hu_interp = prob.add<hStag>(0.0, BC, gcm);
-    Field& hv = prob.add<vStag>(0.0, BC, gcm);
-    Field& hv_interp = prob.add<hStag>(0.0, BC, gcm);
-    Field& huu = prob.add<hStag>(0.0, BC, gcm);
-    Field& huv = prob.add<hStag>(0.0, BC, gcm);
-    Field& hvu = prob.add<hStag>(0.0, BC, gcm);
-    Field& hvv = prob.add<hStag>(0.0, BC, gcm);
+    Field& hu = prob.add(0.0, BC, gcm, uStag);
+    Field& hu_interp = prob.add(0.0, BC, gcm, hStag);
+    Field& hv = prob.add(0.0, BC, gcm, vStag);
+    Field& hv_interp = prob.add(0.0, BC, gcm, hStag);
+    Field& huu = prob.add(0.0, BC, gcm, hStag);
+    Field& huv = prob.add(0.0, BC, gcm, hStag);
+    Field& hvu = prob.add(0.0, BC, gcm, hStag);
+    Field& hvv = prob.add(0.0, BC, gcm, hStag);
 
-    Field& dhu_dx = prob.add<hStag>(0.0, BC, gcm);
-    Field& dhv_dy = prob.add<hStag>(0.0, BC, gcm);
-    Field& dhuu_dx = prob.add<uStag>(0.0, BC, gcm);
-    Field& dhuv_dy = prob.add<uStag>(0.0, BC, gcm);
-    Field& dhvu_dx = prob.add<vStag>(0.0, BC, gcm);
-    Field& dhvv_dy = prob.add<vStag>(0.0, BC, gcm);
+    Field& dhu_dx = prob.add(0.0, BC, gcm, hStag);
+    Field& dhv_dy = prob.add(0.0, BC, gcm, hStag);
+    Field& dhuu_dx = prob.add(0.0, BC, gcm, uStag);
+    Field& dhuv_dy = prob.add(0.0, BC, gcm, uStag);
+    Field& dhvu_dx = prob.add(0.0, BC, gcm, vStag);
+    Field& dhvv_dy = prob.add(0.0, BC, gcm, vStag);
 
     auto t0 = std::chrono::high_resolution_clock::now();
     virta::parallel_region([&]() {
@@ -79,12 +79,12 @@ int main() {
             prob.setBC();
 
             // Derivatives:
-            virta::ddx<DefaultGradScheme, hStag, hStag>(hu, dhu_dx, dx, u, gcm);
-            virta::ddy<DefaultGradScheme, hStag, hStag>(hv, dhv_dy, dx, v, gcm);
-            virta::ddx<DefaultGradScheme, hStag, uStag>(huu, dhuu_dx, dx, u, gcm);
-            virta::ddy<DefaultGradScheme, hStag, uStag>(huv, dhuv_dy, dx, v, gcm);
-            virta::ddx<DefaultGradScheme, hStag, vStag>(hvu, dhvu_dx, dx, u, gcm);
-            virta::ddy<DefaultGradScheme, hStag, vStag>(hvv, dhvv_dy, dx, v, gcm);
+            virta::ddx(DefaultGradScheme, hu, dhu_dx, dx, u, gcm);
+            virta::ddy(DefaultGradScheme, hv, dhv_dy, dx, v, gcm);
+            virta::ddx(DefaultGradScheme, huu, dhuu_dx, dx, u, gcm);
+            virta::ddy(DefaultGradScheme, huv, dhuv_dy, dx, v, gcm);
+            virta::ddx(DefaultGradScheme, hvu, dhvu_dx, dx, u, gcm);
+            virta::ddy(DefaultGradScheme, hvv, dhvv_dy, dx, v, gcm);
 
             // Time advance:
             virta::parallel_for(virta::Range<int>(0, N_iStag), virta::Range<int>(0, N), [&](int i, int j) {
@@ -93,17 +93,17 @@ int main() {
             virta::parallel_for(virta::Range<int>(0, N), virta::Range<int>(0, N_jStag), [&](int i, int j) {
                 hv(i, j) -= dt * (dhvu_dx(i, j) + dhvv_dy(i, j));   // Momentum eq. (y)
             });    
-            virta::interpolate<uStag>(hu, hu_interp);
-            virta::interpolate<vStag>(hv, hv_interp);
+            //virta::interpolate<uStag>(hu, hu_interp);
+            //virta::interpolate<vStag>(hv, hv_interp);
             virta::parallel_for(virta::Range<int>(0, N), virta::Range<int>(0, N), [&](int i, int j) {
                 h(i, j) -= dt * (dhu_dx(i, j) + dhv_dy(i, j));   // Continuity eq.
                 
-                u(i, j) = hu(i, j) / h(i, j);
-                v(i, j) = hv(i, j) / h(i, j);
-                huu(i, j) = hu(i, j) * u(i, j) + 0.5 * g * h(i, j) * h(i, j);
-                huv(i, j) = hu(i, j) * v(i, j);
-                hvu(i, j) = hv(i, j) * u(i, j);
-                hvv(i, j) = hv(i, j) * v(i, j) + 0.5 * g * h(i, j) * h(i, j);
+                u(i, j) = hu_interp(i, j) / h(i, j);
+                v(i, j) = hv_interp(i, j) / h(i, j);
+                huu(i, j) = hu_interp(i, j) * u(i, j) + 0.5 * g * h(i, j) * h(i, j);
+                huv(i, j) = hu_interp(i, j) * v(i, j);
+                hvu(i, j) = hv_interp(i, j) * u(i, j);
+                hvv(i, j) = hv_interp(i, j) * v(i, j) + 0.5 * g * h(i, j) * h(i, j);
             });    
         }
     });

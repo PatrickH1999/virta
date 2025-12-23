@@ -28,65 +28,114 @@ enum class GradScheme {
     Upwind
 };
 
-template <int dim, GradScheme scheme, Staggering stagBase = Staggering::noStag, Staggering stagDeriv = Staggering::noStag, typename Field2D, typename Real>
-inline void grad(const Field2D& base, Field2D& deriv, Real dx, const Field2D& u, int ghost_cell_margin = 0)
-{
+template <int dim, typename Field2D, typename Real>
+inline void grad_central(const Field2D& base, Field2D& deriv, Real dx, int gcm) {
+    constexpr int iFac = (dim == 0) ? 1 : 0;
+    constexpr int jFac = (dim == 1) ? 1 : 0;
+    parallel_for(Range<int>(gcm, deriv.ni - gcm), Range<int>(gcm, deriv.nj - gcm), [&] (int i, int j) {
+        deriv(i, j) = (base(i + iFac, j + jFac) - base(i - iFac, j - jFac)) / (2 * dx);
+    });
+}
+
+template <int dim, typename Field2D, typename Real>
+inline void grad_central_stag(const Field2D& base, Field2D& deriv, Real dx, int gcm) {
+    constexpr int iFac = (dim == 0) ? 1 : 0;
+    constexpr int jFac = (dim == 1) ? 1 : 0;
+
+    bool stagEq = (base.stag == deriv.stag);
+    bool stagBaseAligned = (base.stag == dim);
+    bool stagDerivAligned = (deriv.stag == dim);
+    bool noStagBase = (base.stag == -1);
+    bool noStagDeriv = (deriv.stag == -1);
+    
+    if (stagBaseAligned && noStagDeriv) {
+        parallel_for(Range<int>(gcm, deriv.ni - gcm), Range<int>(gcm, deriv.nj - gcm), [&] (int i, int j) {
+            deriv(i, j) = (base(i + iFac, j + jFac) - base(i, j)) / dx;
+        });
+    } else if (noStagBase && stagDerivAligned) {
+        parallel_for(Range<int>(gcm, deriv.ni - gcm), Range<int>(gcm, deriv.nj - gcm), [&] (int i, int j) {
+            deriv(i, j) = (base(i, j) - base(i - iFac, j - jFac)) / dx;
+        });
+    } else if (!stagBaseAligned && noStagDeriv) {
+        parallel_for(Range<int>(gcm, deriv.ni - gcm), Range<int>(gcm, deriv.nj - gcm), [&] (int i, int j) {
+            deriv(i, j) = (base(i + iFac + jFac, j + iFac + jFac) - base(i - iFac + jFac, j + iFac - jFac) + base(i + iFac, j + jFac) - base(i - iFac, j - jFac)) / (4 * dx);
+        });
+    } else if (noStagBase && !stagDerivAligned) {
+        parallel_for(Range<int>(gcm, deriv.ni - gcm), Range<int>(gcm, deriv.nj - gcm), [&] (int i, int j) {
+            deriv(i, j) = (base(i + iFac, j + jFac) - base(i - iFac, j - jFac) + base(i + iFac - jFac, j - iFac + jFac) - base(i - iFac - jFac, j - iFac - jFac)) / (4 * dx);
+        });
+    } else if (stagBaseAligned && !stagDerivAligned) {
+        parallel_for(Range<int>(gcm, deriv.ni - gcm), Range<int>(gcm, deriv.nj - gcm), [&] (int i, int j) {
+            deriv(i, j) = (base(i + iFac, j + jFac) - base(i, j) + base(i + iFac - jFac, j - iFac + jFac) - base(i - jFac, j - iFac)) / (2 * dx);
+        });
+    } else if (!stagBaseAligned && stagDerivAligned) {
+        parallel_for(Range<int>(gcm, deriv.ni - gcm), Range<int>(gcm, deriv.nj - gcm), [&] (int i, int j) {
+            deriv(i, j) = (base(i + jFac, j + iFac) - base(i - iFac + jFac, j + iFac - jFac) + base(i, j) - base(i - iFac, j - jFac)) / (2 * dx);
+        });
+    }
+}
+
+template <int dim, typename Field2D, typename Real>
+inline void grad_central4(const Field2D& base, Field2D& deriv, Real dx, int gcm) {
     constexpr int iFac = (dim == 0) ? 1 : 0;
     constexpr int jFac = (dim == 1) ? 1 : 0;
     
-    constexpr bool central = (scheme == GradScheme::Central);
-    constexpr bool central4 = (scheme == GradScheme::Central4);
-    constexpr bool central6 = (scheme == GradScheme::Central6);
-    constexpr bool upwind = (scheme == GradScheme::Upwind);
+    parallel_for(Range<int>(gcm, deriv.ni - gcm), Range<int>(gcm, deriv.nj - gcm), [&] (int i, int j) {
+        deriv(i, j) = (-base(i + 2*iFac, j + 2*jFac) + 8 * base(i + iFac, j + jFac) - 8 * base(i - iFac, j - jFac) + base(i - 2*iFac, j - 2*jFac)) / (12 * dx);
+    });
+}
 
-    constexpr bool stagEq = (stagBase == stagDeriv);
-    constexpr bool stagBaseAligned = (((dim == 0) && (stagBase == Staggering::iStag)) || ((dim == 1) && (stagBase == Staggering::jStag)));
-    constexpr bool stagDerivAligned = (((dim == 0) && (stagDeriv == Staggering::iStag)) || ((dim == 1) && (stagDeriv == Staggering::jStag)));
-    constexpr bool noStagBase = (stagBase == Staggering::noStag);
-    constexpr bool noStagDeriv = (stagDeriv == Staggering::noStag);
- 
-    auto& gcm = ghost_cell_margin;
-    parallel_for(Range<int>(gcm, base.ni - gcm), Range<int>(gcm, base.nj - gcm), [&] (int i, int j) {
-        if constexpr (central && stagEq) {
-            deriv(i, j) = (base(i + iFac, j + jFac) - base(i - iFac, j - jFac)) / (2 * dx);
-        } else if constexpr (central && stagBaseAligned && noStagDeriv) {
-            deriv(i, j) = (base(i + iFac, j + jFac) - base(i, j)) / dx;
-        } else if constexpr (central && noStagBase && stagDerivAligned) {
+template <int dim, typename Field2D, typename Real>
+inline void grad_central6(const Field2D& base, Field2D& deriv, Real dx, int gcm) {
+    constexpr int iFac = (dim == 0) ? 1 : 0;
+    constexpr int jFac = (dim == 1) ? 1 : 0;
+    
+    parallel_for(Range<int>(gcm, deriv.ni - gcm), Range<int>(gcm, deriv.nj - gcm), [&] (int i, int j) {
+        deriv(i, j) = (-base(i + 3*iFac, j + 3*jFac) + 9 * base(i + 2*iFac, j + 2*jFac) - 45 * base(i + iFac, j + jFac) + 45 * base(i - iFac, j - jFac) - 9 * base(i - 2*iFac, j - 2*jFac) + base(i - 3*iFac, j - 3*jFac)) / (60 * dx);
+    });
+}
+
+template <int dim, typename Field2D, typename Real>
+inline void grad_upwind(const Field2D& base, Field2D& deriv, Real dx, const Field2D& u, int gcm) {
+    constexpr int iFac = (dim == 0) ? 1 : 0;
+    constexpr int jFac = (dim == 1) ? 1 : 0;
+    
+    parallel_for(Range<int>(gcm, deriv.ni - gcm), Range<int>(gcm, deriv.nj - gcm), [&] (int i, int j) {
+        if (u(i, j) > 0) {
             deriv(i, j) = (base(i, j) - base(i - iFac, j - jFac)) / dx;
-        } else if constexpr (central && !stagBaseAligned && noStagDeriv) {
-            deriv(i, j) = (base(i + iFac + jFac, j + iFac + jFac) - base(i - iFac + jFac, j + iFac - jFac) + base(i + iFac, j + jFac) - base(i - iFac, j - jFac)) / (4 * dx);
-        } else if constexpr (central && noStagBase && !stagDerivAligned) {
-            deriv(i, j) = (base(i + iFac, j + jFac) - base(i - iFac, j - jFac) + base(i + iFac - jFac, j - iFac + jFac) - base(i - iFac - jFac, j - iFac - jFac)) / (4 * dx);
-        } else if constexpr (central && stagBaseAligned && !stagDerivAligned) {
-            deriv(i, j) = (base(i + iFac, j + jFac) - base(i, j) + base(i + iFac - jFac, j - iFac + jFac) - base(i - jFac, j - iFac)) / (2 * dx);
-        } else if constexpr (central && !stagBaseAligned && stagDerivAligned) {
-            deriv(i, j) = (base(i + jFac, j + iFac) - base(i - iFac + jFac, j + iFac - jFac) + base(i, j) - base(i - iFac, j - jFac)) / (2 * dx);
-        } else if constexpr (central4 && stagEq) {
-            deriv(i, j) = (-base(i + 2*iFac, j + 2*jFac) + 8 * base(i + iFac, j + jFac) - 8 * base(i - iFac, j - jFac) + base(i - 2*iFac, j - 2*jFac)) / (12 * dx);
-        } else if constexpr (central6 && stagEq) {
-            deriv(i, j) = (-base(i + 3*iFac, j + 3*jFac) + 9 * base(i + 2*iFac, j + 2*jFac) - 45 * base(i + iFac, j + jFac) + 45 * base(i - iFac, j - jFac) - 9 * base(i - 2*iFac, j - 2*jFac) + base(i - 3*iFac, j - 3*jFac)) / (60 * dx);
-        } else if constexpr (upwind && stagEq) {
-            if (u(i, j) > 0) {
-                deriv(i, j) = (base(i, j) - base(i - iFac, j - jFac)) / dx;
-            } else if (u(i, j) < 0) {
-                deriv(i, j) = (base(i + iFac, j + jFac) - base(i, j)) / dx;
-            } else {
-                deriv(i, j) = (base(i + iFac, j + jFac) - base(i - iFac, j - jFac)) / (2 * dx);
-            }
+        } else if (u(i, j) < 0) {
+            deriv(i, j) = (base(i + iFac, j + jFac) - base(i, j)) / dx;
         } else {
-            static_assert((scheme != scheme), "Unknown grad scheme or grad scheme/staggering combination.");
+            deriv(i, j) = (base(i + iFac, j + jFac) - base(i - iFac, j - jFac)) / (2 * dx);
         }
     });
 }
 
-template <GradScheme scheme, Staggering stagBase = Staggering::noStag, Staggering stagDeriv = Staggering::noStag, typename Field2D, typename Real>
-inline void ddx(const Field2D& base, Field2D& deriv, Real dx, const Field2D& u, int ghost_cell_margin = 0) {
-    grad<0, scheme, stagBase, stagDeriv>(base, deriv, dx, u, ghost_cell_margin);
+template <int dim, typename Field2D, typename Real>
+inline void grad(GradScheme scheme, const Field2D& base, Field2D& deriv, Real dx, const Field2D& u, int gcm)
+{
+    bool central = (scheme == GradScheme::Central);
+    bool central4 = (scheme == GradScheme::Central4);
+    bool central6 = (scheme == GradScheme::Central6);
+    bool upwind = (scheme == GradScheme::Upwind);
+    bool stagEq = (base.stag == deriv.stag);
+
+    if (central && stagEq) grad_central<dim>(base, deriv, dx, gcm);
+    else if (central && !stagEq) grad_central_stag<dim>(base, deriv, dx, gcm);
+    else if (central4 && stagEq) grad_central4<dim>(base, deriv, dx, gcm);
+    else if (central6 && stagEq) grad_central6<dim>(base, deriv, dx, gcm);
+    else if (upwind && stagEq) grad_upwind<dim>(base, deriv, dx, u, gcm);
+    else throw std::logic_error("Invalid grad scheme or grad scheme/staggering combination.");
 }
 
-template <GradScheme scheme, Staggering stagBase = Staggering::noStag, Staggering stagDeriv = Staggering::noStag, typename Field2D, typename Real>
-inline void ddy(const Field2D& base, Field2D& deriv, Real dx, const Field2D& u, int ghost_cell_margin = 0) {
-    grad<1, scheme, stagBase, stagDeriv>(base, deriv, dx, u, ghost_cell_margin);
+template <typename Field2D, typename Real>
+inline void ddx(GradScheme scheme, const Field2D& base, Field2D& deriv, Real dx, const Field2D& u, int gcm = 0) {
+    grad<0>(scheme, base, deriv, dx, u, gcm);
+}
+
+template <typename Field2D, typename Real>
+inline void ddy(GradScheme scheme, const Field2D& base, Field2D& deriv, Real dx, const Field2D& v, int gcm = 0) {
+    grad<1>(scheme, base, deriv, dx, v, gcm);
 }
 
 } // namespace virta
