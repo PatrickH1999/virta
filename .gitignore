@@ -11,6 +11,7 @@
 *.bin
 *.plt
 
+anaconda_projects/
 build/
 bin/
 lib/
