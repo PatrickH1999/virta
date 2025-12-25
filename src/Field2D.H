@@ -35,7 +35,7 @@ public:
     BCStruct<Real, 2> BC;
 
     /// Ghost cell margin.
-    int bcm;
+    int gcm;
 
     /// Staggering.
     int stag;
@@ -43,12 +43,12 @@ public:
     /**
      * @brief Construct a 2D field of size ni_ × nj_ initialized to @p value_.
      */
-    Field2D(size_t ni_, size_t nj_, Real value_, BCStruct<Real, 2> BC_, int bcm_, int stag_) noexcept : ni(ni_), nj(nj_), BC(BC_), bcm(bcm_), Field<Real, Field2D<Real>>(ni_ * nj_, value_), stag(stag_) {}
+    Field2D(size_t ni_, size_t nj_, Real value_, BCStruct<Real, 2> BC_, int gcm_, int stag_) noexcept : ni(ni_), nj(nj_), BC(BC_), gcm(gcm_), Field<Real, Field2D<Real>>(ni_ * nj_, value_), stag(stag_) {}
 
     /**
      * @brief Construct a 2D field of size ni_ × nj_ initialized to @p value_, but with stag set to default value of -1 (no staggering).
      */
-    Field2D(size_t ni_, size_t nj_, Real value_, BCStruct<Real, 2> BC_, int bcm_) noexcept : Field2D(ni_, nj_, value_, BC_, bcm_, -1) {}
+    Field2D(size_t ni_, size_t nj_, Real value_, BCStruct<Real, 2> BC_, int gcm_) noexcept : Field2D(ni_, nj_, value_, BC_, gcm_, -1) {}
 
     /**
      * @brief Access flat index @p i (mutable).
@@ -83,73 +83,73 @@ public:
         if (BC.iLo.type == BCTag::Dirichlet) {
             this->setILowDirichlet(BC.iLo.value);
         } else if (BC.iLo.type == BCTag::Neumann) {
-            this->setILowNeumann(bcm);
+            this->setILowNeumann(gcm);
         }
         // iHi:
         if (BC.iHi.type == BCTag::Dirichlet) {
             this->setIHighDirichlet(BC.iHi.value);
         } else if (BC.iHi.type == BCTag::Neumann) {
-            this->setIHighNeumann(bcm);
+            this->setIHighNeumann(gcm);
         }
         // jLo:
         if (BC.jLo.type == BCTag::Dirichlet) {
             this->setJLowDirichlet(BC.jLo.value);
         } else if (BC.jLo.type == BCTag::Neumann) {
-            this->setJLowNeumann(bcm);
+            this->setJLowNeumann(gcm);
         }
         // jHi:
         if (BC.jHi.type == BCTag::Dirichlet) {
             this->setJHighDirichlet(BC.jHi.value);
         } else if (BC.jHi.type == BCTag::Neumann) {
-            this->setJHighNeumann(bcm);
+            this->setJHighNeumann(gcm);
         }
     }
 
     inline void setILowDirichlet(Real value) {
-        parallel_for(Range<int>(0, bcm), Range<int>(bcm, nj - bcm), [&] (int i, int j) {
+        parallel_for(Range<int>(0, gcm), Range<int>(gcm, nj - gcm), [&] (int i, int j) {
             this->operator()(i, j) = value;
         });
     }
     
     inline void setIHighDirichlet(Real value) {
-        parallel_for(Range<int>(ni - bcm, ni), Range<int>(bcm, nj - bcm), [&] (int i, int j) {
+        parallel_for(Range<int>(ni - gcm, ni), Range<int>(gcm, nj - gcm), [&] (int i, int j) {
             this->operator()(i, j) = value;
         });
     }
     
     inline void setJLowDirichlet(Real value) {
-        parallel_for(Range<int>(bcm, ni - bcm), Range<int>(0, bcm), [&] (int i, int j) {
+        parallel_for(Range<int>(gcm, ni - gcm), Range<int>(0, gcm), [&] (int i, int j) {
             this->operator()(i, j) = value;
         });
     }
     
     inline void setJHighDirichlet(Real value) {
-        parallel_for(Range<int>(bcm, ni - bcm), Range<int>(nj - bcm, nj), [&] (int i, int j) {
+        parallel_for(Range<int>(gcm, ni - gcm), Range<int>(nj - gcm, nj), [&] (int i, int j) {
             this->operator()(i, j) = value;
         });
     }
     
-    inline void setILowNeumann(int bcm) {
-        parallel_for(Range<int>(0, bcm), Range<int>(bcm, nj - bcm), [&] (int i, int j) {
-            this->operator()(i, j) = this->operator()(bcm, j);
+    inline void setILowNeumann(int gcm) {
+        parallel_for(Range<int>(0, gcm), Range<int>(gcm, nj - gcm), [&] (int i, int j) {
+            this->operator()(i, j) = this->operator()(gcm, j);
         });
     }
     
-    inline void setIHighNeumann(int bcm) {
-        parallel_for(Range<int>(ni - bcm, ni), Range<int>(bcm, nj - bcm), [&] (int i, int j) {
-            this->operator()(i, j) = this->operator()(ni - bcm - 1, j);
+    inline void setIHighNeumann(int gcm) {
+        parallel_for(Range<int>(ni - gcm, ni), Range<int>(gcm, nj - gcm), [&] (int i, int j) {
+            this->operator()(i, j) = this->operator()(ni - gcm - 1, j);
         });
     }
     
-    inline void setJLowNeumann(int bcm) {
-        parallel_for(Range<int>(bcm, ni - bcm), Range<int>(0, bcm), [&] (int i, int j) {
-            this->operator()(i, j) = this->operator()(i, bcm);
+    inline void setJLowNeumann(int gcm) {
+        parallel_for(Range<int>(gcm, ni - gcm), Range<int>(0, gcm), [&] (int i, int j) {
+            this->operator()(i, j) = this->operator()(i, gcm);
         });
     }
     
-    inline void setJHighNeumann(int bcm) {
-        parallel_for(Range<int>(bcm, ni - bcm), Range<int>(nj - bcm, nj), [&] (int i, int j) {
-            this->operator()(i, j) = this->operator()(i, nj - bcm - 1);
+    inline void setJHighNeumann(int gcm) {
+        parallel_for(Range<int>(gcm, ni - gcm), Range<int>(nj - gcm, nj), [&] (int i, int j) {
+            this->operator()(i, j) = this->operator()(i, nj - gcm - 1);
         });
     }
 
