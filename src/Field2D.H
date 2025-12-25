@@ -83,25 +83,25 @@ public:
         if (BC.iLo.type == BCTag::Dirichlet) {
             this->setILowDirichlet(BC.iLo.value);
         } else if (BC.iLo.type == BCTag::Neumann) {
-            this->setILowNeumann(gcm);
+            this->setILowNeumann();
         }
         // iHi:
         if (BC.iHi.type == BCTag::Dirichlet) {
             this->setIHighDirichlet(BC.iHi.value);
         } else if (BC.iHi.type == BCTag::Neumann) {
-            this->setIHighNeumann(gcm);
+            this->setIHighNeumann();
         }
         // jLo:
         if (BC.jLo.type == BCTag::Dirichlet) {
             this->setJLowDirichlet(BC.jLo.value);
         } else if (BC.jLo.type == BCTag::Neumann) {
-            this->setJLowNeumann(gcm);
+            this->setJLowNeumann();
         }
         // jHi:
         if (BC.jHi.type == BCTag::Dirichlet) {
             this->setJHighDirichlet(BC.jHi.value);
         } else if (BC.jHi.type == BCTag::Neumann) {
-            this->setJHighNeumann(gcm);
+            this->setJHighNeumann();
         }
     }
 
@@ -128,29 +128,77 @@ public:
             this->operator()(i, j) = value;
         });
     }
-    
-    inline void setILowNeumann(int gcm) {
-        parallel_for(Range<int>(0, gcm), Range<int>(gcm, nj - gcm), [&] (int i, int j) {
-            this->operator()(i, j) = this->operator()(gcm, j);
-        });
+   
+    /*
+    gcm = 2
+    i = 0 <=> i = 3
+    i = 1 <=> i = 2
+
+    gcm = 1
+    i = 0 <=> i = 1
+
+    gcm = 3
+    i = 0 <=> i = 5
+    i = 1 <=> i = 4
+    i = 2 <=> i = 3
+
+    gcm = 4
+    i = 0 <=> j = 7
+    i = 1 <=> j = 6
+    i = 2 <=> j = 5
+    i = 3 <=> j = 4
+
+    j = 2 * gcm - 1 - i
+    */
+        
+    inline void setILowNeumann() {
+        if (stag == -1) {
+            int i_mirr;
+            parallel_for(Range<int>(0, gcm), Range<int>(gcm, nj - gcm), [&] (int i, int j) {
+                i_mirr = 2 * gcm - 1 - i;
+                this->operator()(i, j) = this->operator()(i_mirr, j);
+            });
+        }
     }
     
-    inline void setIHighNeumann(int gcm) {
-        parallel_for(Range<int>(ni - gcm, ni), Range<int>(gcm, nj - gcm), [&] (int i, int j) {
-            this->operator()(i, j) = this->operator()(ni - gcm - 1, j);
-        });
+    /*
+    gcm = 4
+    ni = 100
+    i = ni - 4 <=> j = ni - 5 = i - 1
+    i = ni - 3 <=> j = ni - 6 = i - 3
+    i = ni - 2 <=> j = ni - 7 = i - 5
+    i = ni - 1 <=> j = ni - 8 = i - 7
+    j = i - 2 * (i - ni + gcm) - 1 = i - 2*i + 2*ni - 2*gcm - 1 = -i + 2 * (ni - gcm) - 1
+    */
+
+    inline void setIHighNeumann() {
+        if (stag == -1) {
+            int i_mirr;
+            parallel_for(Range<int>(ni - gcm, ni), Range<int>(gcm, nj - gcm), [&] (int i, int j) {
+                i_mirr = 2 * (ni - gcm) - 1 - i;
+                this->operator()(i, j) = this->operator()(i_mirr, j);
+            });
+        }
     }
     
-    inline void setJLowNeumann(int gcm) {
-        parallel_for(Range<int>(gcm, ni - gcm), Range<int>(0, gcm), [&] (int i, int j) {
-            this->operator()(i, j) = this->operator()(i, gcm);
-        });
+    inline void setJLowNeumann() {
+        if (stag == -1) {
+            int j_mirr;
+            parallel_for(Range<int>(gcm, ni - gcm), Range<int>(0, gcm), [&] (int i, int j) {
+                j_mirr = 2 * gcm - 1 - j;
+                this->operator()(i, j) = this->operator()(i, j_mirr);
+            });
+        }
     }
     
-    inline void setJHighNeumann(int gcm) {
-        parallel_for(Range<int>(gcm, ni - gcm), Range<int>(nj - gcm, nj), [&] (int i, int j) {
-            this->operator()(i, j) = this->operator()(i, nj - gcm - 1);
-        });
+    inline void setJHighNeumann() {
+        if (stag == -1) {
+            int j_mirr;
+            parallel_for(Range<int>(gcm, ni - gcm), Range<int>(nj - gcm, nj), [&] (int i, int j) {
+                j_mirr = 2 * (nj - gcm) - 1 - j;
+                this->operator()(i, j) = this->operator()(i, j_mirr);
+            });
+        }
     }
 
     /**

@@ -26,7 +26,7 @@ int main() {
     constexpr int N_jStag = (stag) ? N + 1 : N;
     constexpr Real dx = (16 * PI) / N;
     constexpr int max_step = 100000;
-    constexpr Real dt = 0.000005;
+    constexpr Real dt = 0.0000025;
     constexpr int gcm = 1;
 
     constexpr Real g = 9.81;
