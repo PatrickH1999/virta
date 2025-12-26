@@ -22,31 +22,47 @@ template<typename Real>
 class Field2D : public Field<Real, Field2D<Real>> {
 
 public:
-    /// Number of points in x-direction.
-    const size_t ni;
-
-    /// Number of points in y-direction.
-    const size_t nj;
-
-    const BCStruct<Real, 2> BC;
-
-    /// Ghost cell margin.
-    const int gcm;
-    
     /// Dimensionality of the field (2D).
     static constexpr int ndim = 2;
+    
+    /// Number of points in i-direction.
+    size_t ni;
 
-    /**
-     * @brief Construct a 2D field of size ni_ × nj_ initialized to zero.
-     */
-    Field2D(const size_t ni_, const size_t nj_, BCStruct<Real, 2> BC_, int gcm_) noexcept
-        : Field<Real, Field2D<Real>>(ni_ * nj_), ni(ni_), nj(nj_), BC(BC_), gcm(gcm_) {}
+    /// Number of points in y-direction.
+    size_t nj;
+
+    /// Boundary conditions.
+    BCStruct<Real, 2> BC;
+
+    /// Ghost cell margin.
+    int gcm;
+
+    /// Staggering.
+    int stag;
+
+    static constexpr size_t compute_ni(size_t ni_, int gcm_, int stag_) {
+        return ni_ + 2 * gcm_ + (stag_ == 0);
+    }
+
+    static constexpr size_t compute_nj(size_t nj_, int gcm_, int stag_) {
+        return nj_ + 2 * gcm_ + (stag_ == 1);
+    }
 
     /**
      * @brief Construct a 2D field of size ni_ × nj_ initialized to @p value_.
      */
-    Field2D(const size_t ni_, const size_t nj_, Real value_, BCStruct<Real, 2> BC_, int gcm_) noexcept
-        : Field<Real, Field2D<Real>>(ni_ * nj_, value_), ni(ni_), nj(nj_), BC(BC_), gcm(gcm_) {}
+    Field2D(size_t ni_, size_t nj_, Real value_, BCStruct<Real, 2> BC_, int gcm_, int stag_) noexcept
+    : ni(compute_ni(ni_, gcm_, stag_))
+    , nj(compute_nj(nj_, gcm_, stag_))
+    , BC(BC_)
+    , gcm(gcm_)
+    , Field<Real, Field2D<Real>>(compute_ni(ni_, gcm_, stag_) * compute_nj(nj_, gcm_, stag_), value_)
+    , stag(stag_) {}
+
+    /**
+     * @brief Construct a 2D field of size ni_ × nj_ initialized to @p value_, but with stag set to default value of -1 (no staggering).
+     */
+    Field2D(size_t ni_, size_t nj_, Real value_, BCStruct<Real, 2> BC_, int gcm_) noexcept : Field2D(ni_, nj_, value_, BC_, gcm_, -1) {}
 
     /**
      * @brief Access flat index @p i (mutable).
@@ -81,25 +97,25 @@ public:
         if (BC.iLo.type == BCTag::Dirichlet) {
             this->setILowDirichlet(BC.iLo.value);
         } else if (BC.iLo.type == BCTag::Neumann) {
-            this->setILowNeumann(gcm);
+            this->setILowNeumann();
         }
         // iHi:
         if (BC.iHi.type == BCTag::Dirichlet) {
             this->setIHighDirichlet(BC.iHi.value);
         } else if (BC.iHi.type == BCTag::Neumann) {
-            this->setIHighNeumann(gcm);
+            this->setIHighNeumann();
         }
         // jLo:
         if (BC.jLo.type == BCTag::Dirichlet) {
             this->setJLowDirichlet(BC.jLo.value);
         } else if (BC.jLo.type == BCTag::Neumann) {
-            this->setJLowNeumann(gcm);
+            this->setJLowNeumann();
         }
         // jHi:
         if (BC.jHi.type == BCTag::Dirichlet) {
             this->setJHighDirichlet(BC.jHi.value);
         } else if (BC.jHi.type == BCTag::Neumann) {
-            this->setJHighNeumann(gcm);
+            this->setJHighNeumann();
         }
     }
 
@@ -126,28 +142,72 @@ public:
             this->operator()(i, j) = value;
         });
     }
-    
-    inline void setILowNeumann(int ghost_cell_margin) {
+   
+    /*
+    gcm = 2
+    i = 0 <=> i = 4
+    i = 1 <=> i = 3
+
+    gcm = 1
+    i = 0 <=> i = 1
+
+    gcm = 3
+    i = 0 <=> i = 5
+    i = 1 <=> i = 4
+    i = 2 <=> i = 3
+
+    gcm = 4
+    i = 0 <=> j = 7
+    i = 1 <=> j = 6
+    i = 2 <=> j = 5
+    i = 3 <=> j = 4
+
+    j = 2 * gcm - 1 - i
+    */
+        
+    inline void setILowNeumann() {
+        int iOffset = (stag == -1 || stag == 1) ? 1 : 0;
+        int iMirr;
         parallel_for(Range<int>(0, gcm), Range<int>(gcm, nj - gcm), [&] (int i, int j) {
-            this->operator()(i, j) = this->operator()(gcm, j);
+            iMirr = 2 * gcm - iOffset - i;
+            this->operator()(i, j) = this->operator()(iMirr, j);
         });
     }
     
-    inline void setIHighNeumann(int ghost_cell_margin) {
+    /*
+    gcm = 4
+    ni = 100
+    i = ni - 4 <=> j = ni - 5 = i - 1
+    i = ni - 3 <=> j = ni - 6 = i - 3
+    i = ni - 2 <=> j = ni - 7 = i - 5
+    i = ni - 1 <=> j = ni - 8 = i - 7
+    j = i - 2 * (i - ni + gcm) - 1 = i - 2*i + 2*ni - 2*gcm - 1 = -i + 2 * (ni - gcm) - 1
+    */
+
+    inline void setIHighNeumann() {
+        int iOffset = (stag == -1 || stag == 1) ? 1 : 2;
+        int iMirr;
         parallel_for(Range<int>(ni - gcm, ni), Range<int>(gcm, nj - gcm), [&] (int i, int j) {
-            this->operator()(i, j) = this->operator()(ni - gcm - 1, j);
+            iMirr = 2 * (ni - gcm) - iOffset - i;
+            this->operator()(i, j) = this->operator()(iMirr, j);
         });
     }
     
-    inline void setJLowNeumann(int ghost_cell_margin) {
+    inline void setJLowNeumann() {
+        int jOffset = (stag == -1 || stag == 0) ? 1 : 0;
+        int jMirr;
         parallel_for(Range<int>(gcm, ni - gcm), Range<int>(0, gcm), [&] (int i, int j) {
-            this->operator()(i, j) = this->operator()(i, gcm);
+            jMirr = 2 * gcm - jOffset - j;
+            this->operator()(i, j) = this->operator()(i, jMirr);
         });
     }
     
-    inline void setJHighNeumann(int ghost_cell_margin) {
+    inline void setJHighNeumann() {
+        int jOffset = (stag == -1 || stag == 0) ? 1 : 2;
+        int jMirr;
         parallel_for(Range<int>(gcm, ni - gcm), Range<int>(nj - gcm, nj), [&] (int i, int j) {
-            this->operator()(i, j) = this->operator()(i, nj - gcm - 1);
+            jMirr = 2 * (nj - gcm) - jOffset - j;
+            this->operator()(i, j) = this->operator()(i, jMirr);
         });
     }
 
