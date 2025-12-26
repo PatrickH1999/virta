@@ -21,15 +21,16 @@ using Field = virta::Field2D<Real>;
 
 int main() {
     constexpr Real PI = 3.14159265358979323846264338327950;
-    constexpr int N = 128;
-    constexpr Real dx = (16 * PI) / N;
-    constexpr int max_step = 100000;
-    constexpr Real dt = 0.000005;
+    constexpr int ni = 256;
+    constexpr int nj = 128;
+    constexpr Real dx = (32 * PI) / ni;
+    constexpr int max_step = 200000;
+    constexpr Real dt = 0.000004;
     constexpr int gcm = 1;
 
     constexpr Real g = 9.81;
    
-    virta::Prob<Real, Field> prob(N, N);
+    virta::Prob<Real, Field> prob(ni, nj);
 
     virta::BCStruct<Real, 2> BC = {{Neumann, 0.0}, {Neumann, 0.0}, {Neumann, 0.0}, {Neumann, 0.0}};
     
@@ -55,12 +56,12 @@ int main() {
 
     auto t0 = std::chrono::high_resolution_clock::now();
     virta::parallel_region([&]() {
-        
+
         // Initialize:
-        virta::parallel_for(virta::Range<int>(0, N + 2 * gcm), virta::Range<int>(0, N + 2 * gcm), [&](int i, int j) {
-            //Real r1 = std::sqrt(std::pow((i - 0.25 * N) * dx, 2) + std::pow((j - 0.5 * N) * dx, 2));
-            //Real r2 = std::sqrt(std::pow((i - 0.75 * N) * dx, 2) + std::pow((j - 0.5 * N) * dx, 2));
-            Real r = std::sqrt(std::pow((i - 0.5 * N) * dx, 2) + std::pow((j - 0.5 * N) * dx, 2));
+        virta::parallel_for(virta::Range<int>(0, h.ni), virta::Range<int>(0, h.nj), [&](int i, int j) {
+            //Real r1 = std::sqrt(std::pow((i - 0.25 * h.ni) * dx, 2) + std::pow((j - 0.5 * h.nj) * dx, 2));
+            //Real r2 = std::sqrt(std::pow((i - 0.75 * h.ni) * dx, 2) + std::pow((j - 0.5 * h.nj) * dx, 2));
+            Real r = std::sqrt(std::pow((i - 0.5 * h.ni) * dx, 2) + std::pow((j - 0.5 * h.nj) * dx, 2));
             //h(i, j) = 1000 + 5 * std::tanh(-r1 + 0.5 * PI) + 5 * std::tanh(-r2 + 0.5 * PI);
             h(i, j) = 1000 + 5 * std::tanh(-r + 0.5 * PI);
             
@@ -70,6 +71,11 @@ int main() {
         
         // Compute:
         for (int n = 0; n < max_step; n++) {
+            #pragma omp single
+            {
+                if (n % 1000 == 0) std::cout << "Time step: " << n << '\n';
+            }
+
             // Boundary conditions:
             prob.setBC();
 
