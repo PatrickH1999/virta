@@ -21,13 +21,11 @@ using Field = virta::Field2D<Real>;
 
 int main() {
     constexpr Real PI = 3.14159265358979323846264338327950;
-    constexpr int N = 256;
-    constexpr int N_iStag = (stag) ? N + 1 : N;
-    constexpr int N_jStag = (stag) ? N + 1 : N;
+    constexpr int N = 128;
     constexpr Real dx = (16 * PI) / N;
     //constexpr int max_step = 100000;
-    constexpr int max_step = 100;
-    constexpr Real dt = 0.0000025;
+    constexpr int max_step = 1000000;
+    constexpr Real dt = 0.000005;
     constexpr int gcm = 1;
 
     constexpr Real g = 9.81;
@@ -60,10 +58,12 @@ int main() {
     virta::parallel_region([&]() {
         
         // Initialize:
-        virta::parallel_for(virta::Range<int>(gcm, N + gcm), virta::Range<int>(gcm, N + gcm), [&](int i, int j) {
-            Real r1 = std::sqrt(std::pow((i - 0.25 * N) * dx, 2) + std::pow((j - 0.5 * N) * dx, 2));
-            Real r2 = std::sqrt(std::pow((i - 0.75 * N) * dx, 2) + std::pow((j - 0.5 * N) * dx, 2));
-            h(i, j) = 1000 + 5 * std::tanh(-r1 + 0.5 * PI) + 5 * std::tanh(-r2 + 0.5 * PI);
+        virta::parallel_for(virta::Range<int>(0, N + 2 * gcm), virta::Range<int>(0, N + 2 * gcm), [&](int i, int j) {
+            //Real r1 = std::sqrt(std::pow((i - 0.25 * N) * dx, 2) + std::pow((j - 0.5 * N) * dx, 2));
+            //Real r2 = std::sqrt(std::pow((i - 0.75 * N) * dx, 2) + std::pow((j - 0.5 * N) * dx, 2));
+            Real r = std::sqrt(std::pow((i - 0.5 * N) * dx, 2) + std::pow((j - 0.5 * N) * dx, 2));
+            //h(i, j) = 1000 + 5 * std::tanh(-r1 + 0.5 * PI) + 5 * std::tanh(-r2 + 0.5 * PI);
+            h(i, j) = 1000 + 5 * std::tanh(-r + 0.5 * PI);
             
             huu(i, j) = 0.5 * g * h(i, j) * h(i, j);
             hvv(i, j) = 0.5 * g * h(i, j) * h(i, j);
@@ -83,15 +83,15 @@ int main() {
             virta::ddy(DefaultGradScheme, hvv, dhvv_dy, dx, v, gcm);
 
             // Time advance:
-            virta::parallel_for(virta::Range<int>(0, N_iStag), virta::Range<int>(0, N), [&](int i, int j) {
+            virta::parallel_for(virta::Range<int>(gcm, hu.ni - gcm), virta::Range<int>(gcm, hu.nj - gcm), [&](int i, int j) {
                 hu(i, j) -= dt * (dhuu_dx(i, j) + dhuv_dy(i, j));   // Momentum eq. (x)
             });
-            virta::parallel_for(virta::Range<int>(0, N), virta::Range<int>(0, N_jStag), [&](int i, int j) {
+            virta::parallel_for(virta::Range<int>(gcm, hv.ni - gcm), virta::Range<int>(gcm, hv.nj - gcm), [&](int i, int j) {
                 hv(i, j) -= dt * (dhvu_dx(i, j) + dhvv_dy(i, j));   // Momentum eq. (y)
             });    
             virta::interpolate(hu, hu_interp);
             virta::interpolate(hv, hv_interp);
-            virta::parallel_for(virta::Range<int>(0, N), virta::Range<int>(0, N), [&](int i, int j) {
+            virta::parallel_for(virta::Range<int>(gcm, h.ni - gcm), virta::Range<int>(gcm, h.nj - gcm), [&](int i, int j) {
                 h(i, j) -= dt * (dhu_dx(i, j) + dhv_dy(i, j));   // Continuity eq.
                 
                 u(i, j) = hu_interp(i, j) / h(i, j);
