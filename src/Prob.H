@@ -17,21 +17,14 @@ enum class Staggering {
 template<typename Real, typename FieldXD>
 class Prob {
 public:
-    const size_t ni_;
-    const size_t nj_;
+    const size_t ni;
+    const size_t nj;
     
     std::vector<std::unique_ptr<FieldXD>> fields;
 
-    Prob(size_t ni, size_t nj) : ni_(ni), nj_(nj) {}
+    Prob(size_t ni_, size_t nj_) : ni(ni_), nj(nj_) {}
 
     FieldXD& add(Real value, virta::BCStruct<Real, 2> BC, int gcm, int stag = -1) {
-        int ni = ni_;
-        int nj = nj_;
-        if (stag == 0) {
-            ni++;
-        } else if (stag == 1) {
-            nj++;
-        }
         auto ptr = std::make_unique<FieldXD>(ni, nj, value, BC, gcm, stag);
         FieldXD& ref = *ptr;
         fields.push_back(std::move(ptr));

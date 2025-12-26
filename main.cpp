@@ -25,7 +25,8 @@ int main() {
     constexpr int N_iStag = (stag) ? N + 1 : N;
     constexpr int N_jStag = (stag) ? N + 1 : N;
     constexpr Real dx = (16 * PI) / N;
-    constexpr int max_step = 100000;
+    //constexpr int max_step = 100000;
+    constexpr int max_step = 100;
     constexpr Real dt = 0.0000025;
     constexpr int gcm = 1;
 
@@ -59,18 +60,13 @@ int main() {
     virta::parallel_region([&]() {
         
         // Initialize:
-        virta::parallel_for(virta::Range<int>(0, N), virta::Range<int>(0, N), [&](int i, int j) {
+        virta::parallel_for(virta::Range<int>(gcm, N + gcm), virta::Range<int>(gcm, N + gcm), [&](int i, int j) {
             Real r1 = std::sqrt(std::pow((i - 0.25 * N) * dx, 2) + std::pow((j - 0.5 * N) * dx, 2));
             Real r2 = std::sqrt(std::pow((i - 0.75 * N) * dx, 2) + std::pow((j - 0.5 * N) * dx, 2));
-            //Real r = std::abs(i * dx - 0.5 * N * dx);
             h(i, j) = 1000 + 5 * std::tanh(-r1 + 0.5 * PI) + 5 * std::tanh(-r2 + 0.5 * PI);
-
-            hu(i, j) = h(i, j) * u(i, j);
-            hv(i, j) = h(i, j) * v(i, j);
-            huu(i, j) = h(i, j) * u(i, j) * u(i, j) + 0.5 * g * h(i, j) * h(i, j);
-            huv(i, j) = hu(i, j) * v(i, j);
-            hvu(i, j) = hv(i, j) * u(i, j);
-            hvv(i, j) = h(i, j) * v(i, j) * v(i, j) + 0.5 * g * h(i, j) * h(i, j);
+            
+            huu(i, j) = 0.5 * g * h(i, j) * h(i, j);
+            hvv(i, j) = 0.5 * g * h(i, j) * h(i, j);
         });
         
         // Compute:
@@ -93,8 +89,8 @@ int main() {
             virta::parallel_for(virta::Range<int>(0, N), virta::Range<int>(0, N_jStag), [&](int i, int j) {
                 hv(i, j) -= dt * (dhvu_dx(i, j) + dhvv_dy(i, j));   // Momentum eq. (y)
             });    
-            //virta::interpolate<uStag>(hu, hu_interp);
-            //virta::interpolate<vStag>(hv, hv_interp);
+            virta::interpolate(hu, hu_interp);
+            virta::interpolate(hv, hv_interp);
             virta::parallel_for(virta::Range<int>(0, N), virta::Range<int>(0, N), [&](int i, int j) {
                 h(i, j) -= dt * (dhu_dx(i, j) + dhv_dy(i, j));   // Continuity eq.
                 

@@ -40,10 +40,24 @@ public:
     /// Staggering.
     int stag;
 
+    static constexpr size_t compute_ni(size_t ni_, int gcm_, int stag_) {
+        return ni_ + 2 * gcm_ + (stag_ == 0);
+    }
+
+    static constexpr size_t compute_nj(size_t nj_, int gcm_, int stag_) {
+        return nj_ + 2 * gcm_ + (stag_ == 1);
+    }
+
     /**
      * @brief Construct a 2D field of size ni_ × nj_ initialized to @p value_.
      */
-    Field2D(size_t ni_, size_t nj_, Real value_, BCStruct<Real, 2> BC_, int gcm_, int stag_) noexcept : ni(ni_), nj(nj_), BC(BC_), gcm(gcm_), Field<Real, Field2D<Real>>(ni_ * nj_, value_), stag(stag_) {}
+    Field2D(size_t ni_, size_t nj_, Real value_, BCStruct<Real, 2> BC_, int gcm_, int stag_) noexcept
+    : ni(compute_ni(ni_, gcm_, stag_))
+    , nj(compute_nj(nj_, gcm_, stag_))
+    , BC(BC_)
+    , gcm(gcm_)
+    , Field<Real, Field2D<Real>>(compute_ni(ni_, gcm_, stag_) * compute_nj(nj_, gcm_, stag_), value_)
+    , stag(stag_) {}
 
     /**
      * @brief Construct a 2D field of size ni_ × nj_ initialized to @p value_, but with stag set to default value of -1 (no staggering).
@@ -131,8 +145,8 @@ public:
    
     /*
     gcm = 2
-    i = 0 <=> i = 3
-    i = 1 <=> i = 2
+    i = 0 <=> i = 4
+    i = 1 <=> i = 3
 
     gcm = 1
     i = 0 <=> i = 1
@@ -152,13 +166,12 @@ public:
     */
         
     inline void setILowNeumann() {
-        if (stag == -1) {
-            int i_mirr;
-            parallel_for(Range<int>(0, gcm), Range<int>(gcm, nj - gcm), [&] (int i, int j) {
-                i_mirr = 2 * gcm - 1 - i;
-                this->operator()(i, j) = this->operator()(i_mirr, j);
-            });
-        }
+        int iOffset = (stag == -1 || stag == 1) ? 1 : 0;
+        int iMirr;
+        parallel_for(Range<int>(0, gcm), Range<int>(gcm, nj - gcm), [&] (int i, int j) {
+            iMirr = 2 * gcm - iOffset - i;
+            this->operator()(i, j) = this->operator()(iMirr, j);
+        });
     }
     
     /*
@@ -172,33 +185,30 @@ public:
     */
 
     inline void setIHighNeumann() {
-        if (stag == -1) {
-            int i_mirr;
-            parallel_for(Range<int>(ni - gcm, ni), Range<int>(gcm, nj - gcm), [&] (int i, int j) {
-                i_mirr = 2 * (ni - gcm) - 1 - i;
-                this->operator()(i, j) = this->operator()(i_mirr, j);
-            });
-        }
+        int iOffset = (stag == -1 || stag == 1) ? 1 : 2;
+        int iMirr;
+        parallel_for(Range<int>(ni - gcm, ni), Range<int>(gcm, nj - gcm), [&] (int i, int j) {
+            iMirr = 2 * (ni - gcm) - iOffset - i;
+            this->operator()(i, j) = this->operator()(iMirr, j);
+        });
     }
     
     inline void setJLowNeumann() {
-        if (stag == -1) {
-            int j_mirr;
-            parallel_for(Range<int>(gcm, ni - gcm), Range<int>(0, gcm), [&] (int i, int j) {
-                j_mirr = 2 * gcm - 1 - j;
-                this->operator()(i, j) = this->operator()(i, j_mirr);
-            });
-        }
+        int jOffset = (stag == -1 || stag == 0) ? 1 : 0;
+        int jMirr;
+        parallel_for(Range<int>(gcm, ni - gcm), Range<int>(0, gcm), [&] (int i, int j) {
+            jMirr = 2 * gcm - jOffset - j;
+            this->operator()(i, j) = this->operator()(i, jMirr);
+        });
     }
     
     inline void setJHighNeumann() {
-        if (stag == -1) {
-            int j_mirr;
-            parallel_for(Range<int>(gcm, ni - gcm), Range<int>(nj - gcm, nj), [&] (int i, int j) {
-                j_mirr = 2 * (nj - gcm) - 1 - j;
-                this->operator()(i, j) = this->operator()(i, j_mirr);
-            });
-        }
+        int jOffset = (stag == -1 || stag == 0) ? 1 : 2;
+        int jMirr;
+        parallel_for(Range<int>(gcm, ni - gcm), Range<int>(nj - gcm, nj), [&] (int i, int j) {
+            jMirr = 2 * (nj - gcm) - jOffset - j;
+            this->operator()(i, j) = this->operator()(i, jMirr);
+        });
     }
 
     /**

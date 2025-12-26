@@ -84,14 +84,12 @@ inline void parallel_region(Func&& f) {
 #endif
 }
 
-template <Staggering stagOrig, typename Field2D>
+template <typename Field2D>
 inline void interpolate(const Field2D& orig, Field2D& dest) {
-    constexpr int iFac = (stagOrig == Staggering::iStag) ? 1 : 0;
-    constexpr int jFac = (stagOrig == Staggering::jStag) ? 1 : 0;
-    constexpr bool noStag = (stagOrig == Staggering::noStag);
-    bool sizesOk = ((orig.ni == (dest.ni + iFac)) && (orig.nj == (dest.nj + jFac)));
-    //assert(sizesOk && "Orig must be +1 larger in staggering direction than dest.");
-    if constexpr (!noStag) {
+    int iFac = (orig.stag == 0) ? 1 : 0;
+    int jFac = (orig.stag == 1) ? 1 : 0;
+    bool noStag = (orig.stag == -1);
+    if (!noStag) {
         parallel_for(Range<int>(0, dest.ni), Range<int>(0, dest.nj), [&] (int i, int j) {
             dest(i, j) = (orig(i + iFac, j + jFac) + orig(i, j)) / 2;
         });
