@@ -23,8 +23,7 @@ int main() {
     constexpr Real PI = 3.14159265358979323846264338327950;
     constexpr int N = 128;
     constexpr Real dx = (16 * PI) / N;
-    //constexpr int max_step = 100000;
-    constexpr int max_step = 1000000;
+    constexpr int max_step = 100000;
     constexpr Real dt = 0.000005;
     constexpr int gcm = 1;
 
