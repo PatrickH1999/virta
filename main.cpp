@@ -26,7 +26,7 @@ int main() {
     constexpr Real dx = (32 * PI) / ni;
     constexpr int max_step = 200000;
     constexpr Real dt = 0.000004;
-    constexpr int gcm = 1;
+    int gcm = virta::gcm(DefaultGradScheme);
 
     constexpr Real g = 9.81;
    

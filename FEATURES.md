@@ -1,5 +1,4 @@
 ### Planned:
-- Staggering
 - Implicit time stepping
 - Periodic boundaries
 - Solid cells (rigid body in flow)
@@ -11,3 +10,4 @@
 ### Implemented:
 - Introduce "Prob" class that includes all fields and prob parms
 - Boundary conditions within Field-Classes
+- Staggering

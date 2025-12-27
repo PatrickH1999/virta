@@ -1,14 +1,12 @@
 #ifndef FUNCTIONS_H
 #define FUNCTIONS_H
 
-#include <cassert>
 #ifdef USE_OMP
     #include <omp.h>
 #endif
 
-#include "Field.H"
 #include "Field2D.H"
-#include "Prob.H"
+#include "Grad.H"
 #include "Range.H"
 
 namespace virta {
@@ -94,6 +92,14 @@ inline void interpolate(const Field2D& orig, Field2D& dest) {
             dest(i, j) = (orig(i + iFac, j + jFac) + orig(i, j)) / 2;
         });
     }
+}
+
+inline int gcm(GradScheme scheme) {
+    if (scheme == GradScheme::Central) return 1;
+    else if (scheme == GradScheme::Central4) return 2;
+    else if (scheme == GradScheme::Central6) return 3;
+    else if (scheme == GradScheme::Upwind) return 1;
+    else return -1;
 }
 
 /** @} */ // end of Functions

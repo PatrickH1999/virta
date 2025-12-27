@@ -142,28 +142,6 @@ public:
             this->operator()(i, j) = value;
         });
     }
-   
-    /*
-    gcm = 2
-    i = 0 <=> i = 4
-    i = 1 <=> i = 3
-
-    gcm = 1
-    i = 0 <=> i = 1
-
-    gcm = 3
-    i = 0 <=> i = 5
-    i = 1 <=> i = 4
-    i = 2 <=> i = 3
-
-    gcm = 4
-    i = 0 <=> j = 7
-    i = 1 <=> j = 6
-    i = 2 <=> j = 5
-    i = 3 <=> j = 4
-
-    j = 2 * gcm - 1 - i
-    */
         
     inline void setILowNeumann() {
         int iOffset = (stag == -1 || stag == 1) ? 1 : 0;
@@ -173,16 +151,6 @@ public:
             this->operator()(i, j) = this->operator()(iMirr, j);
         });
     }
-    
-    /*
-    gcm = 4
-    ni = 100
-    i = ni - 4 <=> j = ni - 5 = i - 1
-    i = ni - 3 <=> j = ni - 6 = i - 3
-    i = ni - 2 <=> j = ni - 7 = i - 5
-    i = ni - 1 <=> j = ni - 8 = i - 7
-    j = i - 2 * (i - ni + gcm) - 1 = i - 2*i + 2*ni - 2*gcm - 1 = -i + 2 * (ni - gcm) - 1
-    */
 
     inline void setIHighNeumann() {
         int iOffset = (stag == -1 || stag == 1) ? 1 : 2;
