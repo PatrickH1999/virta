@@ -25,21 +25,26 @@ int main() {
     constexpr int nj = 128;
     constexpr Real dx = (32 * PI) / ni;
     constexpr int max_step = 200000;
-    constexpr Real dt = 0.000004;
+    constexpr Real dt = 0.000002;
     int gcm = virta::gcm(DefaultGradScheme);
 
     constexpr Real g = 9.81;
+    constexpr Real h_init = 5.0;
+    constexpr Real u_init = 10.0;
+    constexpr Real hu_init = h_init * u_init;
    
     virta::Prob<Real, Field> prob(ni, nj);
 
-    virta::BCStruct<Real, 2> BC = {{Neumann, 0.0}, {Neumann, 0.0}, {Neumann, 0.0}, {Neumann, 0.0}};
-    
+    constexpr virta::BCStruct<Real, 2> BC = {{Neumann, 0.0}, {Neumann, 0.0}, {Neumann, 0.0}, {Neumann, 0.0}};
+    constexpr virta::BCStruct<Real, 2> u_BC = {{Dirichlet, u_init}, {Dirichlet, u_init}, {Dirichlet, u_init}, {Dirichlet, u_init}};
+    constexpr virta::BCStruct<Real, 2> hu_BC = {{Dirichlet, hu_init}, {Dirichlet, hu_init}, {Dirichlet, hu_init}, {Dirichlet, hu_init}};
+
     Field& h = prob.add(0.0, BC, gcm, hStag);
-    Field& u = prob.add(0.0, BC, gcm, hStag);
+    Field& u = prob.add(u_init, u_BC, gcm, hStag);
     Field& v = prob.add(0.0, BC, gcm, hStag);
    
-    Field& hu = prob.add(0.0, BC, gcm, uStag);
-    Field& hu_interp = prob.add(0.0, BC, gcm, hStag);
+    Field& hu = prob.add(hu_init, hu_BC, gcm, uStag);
+    Field& hu_interp = prob.add(hu_init, hu_BC, gcm, hStag);
     Field& hv = prob.add(0.0, BC, gcm, vStag);
     Field& hv_interp = prob.add(0.0, BC, gcm, hStag);
     Field& huu = prob.add(0.0, BC, gcm, hStag);
@@ -63,10 +68,7 @@ int main() {
             //Real r2 = std::sqrt(std::pow((i - 0.75 * h.ni) * dx, 2) + std::pow((j - 0.5 * h.nj) * dx, 2));
             Real r = std::sqrt(std::pow((i - 0.5 * h.ni) * dx, 2) + std::pow((j - 0.5 * h.nj) * dx, 2));
             //h(i, j) = 1000 + 5 * std::tanh(-r1 + 0.5 * PI) + 5 * std::tanh(-r2 + 0.5 * PI);
-            h(i, j) = 1000 + 5 * std::tanh(-r + 0.5 * PI);
-            
-            huu(i, j) = 0.5 * g * h(i, j) * h(i, j);
-            hvv(i, j) = 0.5 * g * h(i, j) * h(i, j);
+            h(i, j) = h_init + 0.1 * std::tanh(-r + 0.5 * PI);
         });
         
         // Compute:

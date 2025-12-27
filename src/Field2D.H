@@ -118,28 +118,40 @@ public:
             this->setJHighNeumann();
         }
     }
-
+     
     inline void setILowDirichlet(Real value) {
+        int iOffset = (stag == -1 || stag == 1) ? 1 : 0;
+        int iMirr;
         parallel_for(Range<int>(0, gcm), Range<int>(gcm, nj - gcm), [&] (int i, int j) {
-            this->operator()(i, j) = value;
+            iMirr = 2 * gcm - iOffset - i;
+            this->operator()(i, j) = 2 * value - this->operator()(iMirr, j);
         });
     }
-    
+
     inline void setIHighDirichlet(Real value) {
+        int iOffset = (stag == -1 || stag == 1) ? 1 : 2;
+        int iMirr;
         parallel_for(Range<int>(ni - gcm, ni), Range<int>(gcm, nj - gcm), [&] (int i, int j) {
-            this->operator()(i, j) = value;
+            iMirr = 2 * (ni - gcm) - iOffset - i;
+            this->operator()(i, j) = 2 * value - this->operator()(iMirr, j);
         });
     }
     
     inline void setJLowDirichlet(Real value) {
+        int jOffset = (stag == -1 || stag == 0) ? 1 : 0;
+        int jMirr;
         parallel_for(Range<int>(gcm, ni - gcm), Range<int>(0, gcm), [&] (int i, int j) {
-            this->operator()(i, j) = value;
+            jMirr = 2 * gcm - jOffset - j;
+            this->operator()(i, j) = 2 * value - this->operator()(i, jMirr);
         });
     }
     
     inline void setJHighDirichlet(Real value) {
+        int jOffset = (stag == -1 || stag == 0) ? 1 : 2;
+        int jMirr;
         parallel_for(Range<int>(gcm, ni - gcm), Range<int>(nj - gcm, nj), [&] (int i, int j) {
-            this->operator()(i, j) = value;
+            jMirr = 2 * (nj - gcm) - jOffset - j;
+            this->operator()(i, j) = 2 * value - this->operator()(i, jMirr);
         });
     }
         
