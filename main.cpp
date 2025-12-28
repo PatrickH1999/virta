@@ -21,10 +21,10 @@ using Field = virta::Field2D<Real>;
 
 int main() {
     constexpr Real PI = 3.14159265358979323846264338327950;
-    constexpr int ni = 256;
-    constexpr int nj = 128;
+    constexpr int ni = 128;
+    constexpr int nj = 64;
     constexpr Real dx = (32 * PI) / ni;
-    constexpr int max_step = 100000;
+    constexpr int max_step = 200000;
     constexpr Real dt = 0.00005;
     int gcm = virta::gcm(DefaultGradScheme);
 
