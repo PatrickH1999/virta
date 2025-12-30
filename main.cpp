@@ -73,10 +73,12 @@ int main() {
         
         // Compute:
         for (int n = 0; n < max_step; n++) {
+            /*
             #pragma omp single
             {
                 if (n % 1000 == 0) std::cout << "Time step: " << n << '\n';
             }
+            */
 
             // Boundary conditions:
             prob.setBC();
