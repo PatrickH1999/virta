@@ -123,13 +123,13 @@ public:
         int iOffset = (stag == 0) ? 0 : 1;
         int iMirr;
         parallel_for(Range<int>(0, gcm), Range<int>(gcm, nj - gcm), [&] (int i, int j) {
-            iMirr = 2 * gcm + iOffset - i;
+            iMirr = 2 * gcm - iOffset - i;
             this->operator()(i, j) = 2 * value - this->operator()(iMirr, j);
         });
     }
 
     inline void setIHighDirichlet(Real value) {
-        int iOffset = (stag == 0) ? 3 : 2;
+        int iOffset = (stag == 0) ? 2 : 1;
         int iMirr;
         parallel_for(Range<int>(ni - gcm, ni), Range<int>(gcm, nj - gcm), [&] (int i, int j) {
             iMirr = 2 * (ni - gcm) - iOffset - i;
@@ -141,13 +141,13 @@ public:
         int jOffset = (stag == 1) ? 0 : 1;
         int jMirr;
         parallel_for(Range<int>(gcm, ni - gcm), Range<int>(0, gcm), [&] (int i, int j) {
-            jMirr = 2 * gcm + jOffset - j;
+            jMirr = 2 * gcm - jOffset - j;
             this->operator()(i, j) = 2 * value - this->operator()(i, jMirr);
         });
     }
     
     inline void setJHighDirichlet(Real value) {
-        int jOffset = (stag == 1) ? 3 : 2;
+        int jOffset = (stag == 1) ? 2 : 1;
         int jMirr;
         parallel_for(Range<int>(gcm, ni - gcm), Range<int>(nj - gcm, nj), [&] (int i, int j) {
             jMirr = 2 * (nj - gcm) - jOffset - j;
@@ -156,16 +156,16 @@ public:
     }
         
     inline void setILowNeumann() {
-        int iOffset = (stag == 0) ? 1 : 0;
+        int iOffset = (stag == 0) ? 0 : 1;
         int iMirr;
         parallel_for(Range<int>(0, gcm), Range<int>(gcm, nj - gcm), [&] (int i, int j) {
-            iMirr = 2 * gcm + iOffset - i;
+            iMirr = 2 * gcm - iOffset - i;
             this->operator()(i, j) = this->operator()(iMirr, j);
         });
     }
 
     inline void setIHighNeumann() {
-        int iOffset = (stag == 0) ? 3 : 2;
+        int iOffset = (stag == 0) ? 2 : 1;
         int iMirr;
         parallel_for(Range<int>(ni - gcm, ni), Range<int>(gcm, nj - gcm), [&] (int i, int j) {
             iMirr = 2 * (ni - gcm) - iOffset - i;
@@ -177,13 +177,13 @@ public:
         int jOffset = (stag == 1) ? 0 : 1;
         int jMirr;
         parallel_for(Range<int>(gcm, ni - gcm), Range<int>(0, gcm), [&] (int i, int j) {
-            jMirr = 2 * gcm + jOffset - j;
+            jMirr = 2 * gcm - jOffset - j;
             this->operator()(i, j) = this->operator()(i, jMirr);
         });
     }
     
     inline void setJHighNeumann() {
-        int jOffset = (stag == 1) ? 3 : 2;
+        int jOffset = (stag == 1) ? 2 : 1;
         int jMirr;
         parallel_for(Range<int>(gcm, ni - gcm), Range<int>(nj - gcm, nj), [&] (int i, int j) {
             jMirr = 2 * (nj - gcm) - jOffset - j;
