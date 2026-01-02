@@ -48,10 +48,10 @@ inline Real grad_central_stag(const Field2D& base, const int i, const int j, con
     
     if (stagBaseAligned && noStagDeriv) {
         return (base(i + iFac, j + jFac) - base(i, j)) / dx;
-    } else if (noStagBase && stagDerivAligned) {
-        return (base(i, j) - base(i - iFac, j - jFac)) / dx;
     } else if (!stagBaseAligned && noStagDeriv) {
         return (base(i + iFac + jFac, j + iFac + jFac) - base(i - iFac + jFac, j + iFac - jFac) + base(i + iFac, j + jFac) - base(i - iFac, j - jFac)) / (4 * dx);
+    } else if (noStagBase && stagDerivAligned) {
+        return (base(i, j) - base(i - iFac, j - jFac)) / dx;
     } else if (noStagBase && !stagDerivAligned) {
         return (base(i + iFac, j + jFac) - base(i - iFac, j - jFac) + base(i + iFac - jFac, j - iFac + jFac) - base(i - iFac - jFac, j - iFac - jFac)) / (4 * dx);
     } else if (stagBaseAligned && !stagDerivAligned) {
